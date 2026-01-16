@@ -1485,7 +1485,7 @@
         const { data: promptData } = await supabaseClient
           .from('prompts')
           .select('prompt_text')
-          .eq('name', 'scenario_writing')
+          .eq('name', 'Scenario Writing Guide')
           .single();
 
         const response = await fetch('/api/generate', {
@@ -1530,7 +1530,7 @@
         const { data: promptData } = await supabaseClient
           .from('prompts')
           .select('prompt_text')
-          .eq('name', 'backcasting')
+          .eq('name', 'Backcasting')
           .single();
 
         // Collect previous phases
@@ -1635,7 +1635,7 @@
         const { data: promptData } = await supabaseClient
           .from('prompts')
           .select('prompt_text')
-          .eq('name', 'vignette')
+          .eq('name', 'Day in a life')
           .single();
 
         const response = await fetch('/api/generate', {
@@ -1710,7 +1710,7 @@
         const { data: promptData } = await supabaseClient
           .from('prompts')
           .select('prompt_text')
-          .eq('name', 'consequence_generation')
+          .eq('name', 'Consequence')
           .single();
 
         // Build backcasting journey
