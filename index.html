@@ -497,20 +497,15 @@
             <p data-lang-key="clickToUpload">Click to upload photo of cards</p>
             <input type="file" id="card-photo-input" accept="image/*" capture="environment" onchange="handlePhotoUpload(event)">
           </div>
-        </div>
 
-        <!-- Recognition Result / Manual Override -->
-        <div id="card-recognition-area" class="hidden">
-          <div class="label" data-lang-key="recognizedCards">Recognized Cards</div>
-
-          <div class="card-selection" id="card-display">
-            <!-- Filled dynamically -->
+          <div style="text-align: center; margin: 16px 0; color: var(--gray);">
+            <span data-lang-key="orManualSelect">— or select manually —</span>
           </div>
 
-          <!-- Manual Override (Moderator only) -->
-          <div id="manual-override" class="manual-override moderator-only">
-            <div class="label" data-lang-key="confirmOrAdjust">Confirm or adjust selections:</div>
-            <div class="grid">
+          <!-- Manual Card Selection -->
+          <div class="card" id="manual-card-selection">
+            <div class="label" data-lang-key="choiceCards">Choice Cards</div>
+            <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
               <div class="select-group">
                 <label>Resources</label>
                 <select id="select-resources">
@@ -526,12 +521,16 @@
                 </select>
               </div>
               <div class="select-group">
-                <label>Dominant Value</label>
+                <label data-lang-key="dominantValue">Dominant Value</label>
                 <select id="select-value">
                   <option value="collective">Collective</option>
                   <option value="individual">Individual</option>
                 </select>
               </div>
+            </div>
+
+            <div class="label" data-lang-key="technologyCards">Technology Cards</div>
+            <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
               <div class="select-group">
                 <label>Technology 1</label>
                 <select id="select-tech1">
@@ -555,7 +554,68 @@
                 </select>
               </div>
             </div>
-            <button onclick="confirmCardSelection()" data-lang-key="confirmSelection">Confirm Selection</button>
+
+            <button onclick="confirmCardSelection()" class="full-width" data-lang-key="confirmSelection">Confirm Selection</button>
+          </div>
+        </div>
+
+        <!-- Recognition Result (shown after photo scan) -->
+        <div id="card-recognition-area" class="hidden">
+          <div class="label" data-lang-key="recognizedCards">Recognized Cards</div>
+
+          <div class="card-selection" id="card-display">
+            <!-- Filled dynamically -->
+          </div>
+
+          <!-- Manual Override (Moderator only, shown after photo scan) -->
+          <div id="manual-override" class="manual-override moderator-only">
+            <div class="label" data-lang-key="confirmOrAdjust">Confirm or adjust selections:</div>
+            <div class="grid">
+              <div class="select-group">
+                <label>Resources</label>
+                <select id="select-resources-override">
+                  <option value="abundance">Abundance</option>
+                  <option value="limits">Limits</option>
+                </select>
+              </div>
+              <div class="select-group">
+                <label>System</label>
+                <select id="select-system-override">
+                  <option value="stable">Stable</option>
+                  <option value="breaks">Breaks</option>
+                </select>
+              </div>
+              <div class="select-group">
+                <label>Dominant Value</label>
+                <select id="select-value-override">
+                  <option value="collective">Collective</option>
+                  <option value="individual">Individual</option>
+                </select>
+              </div>
+              <div class="select-group">
+                <label>Technology 1</label>
+                <select id="select-tech1-override">
+                  <option value="quantum">Quantum</option>
+                  <option value="robotics">Robotics</option>
+                  <option value="neurotech">Neurotech</option>
+                  <option value="biotech">Biotech</option>
+                  <option value="climate tech">Climate Tech</option>
+                  <option value="agi">AGI</option>
+                </select>
+              </div>
+              <div class="select-group">
+                <label>Technology 2</label>
+                <select id="select-tech2-override">
+                  <option value="quantum">Quantum</option>
+                  <option value="robotics">Robotics</option>
+                  <option value="neurotech">Neurotech</option>
+                  <option value="biotech">Biotech</option>
+                  <option value="climate tech">Climate Tech</option>
+                  <option value="agi">AGI</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="confirmCardSelectionFromOverride()" data-lang-key="confirmSelection">Confirm Selection</button>
           </div>
         </div>
 
@@ -935,6 +995,10 @@
         phase1Instructions: 'Instructies',
         phase1InstructionsText: 'Leg je 5 kaarten open neer: 3 keuzekaarten (Resources, Systeem, Waarde) en 2 technologiekaarten. Als je klaar bent, maakt de moderator een foto.',
         clickToUpload: 'Klik om foto van kaarten te uploaden',
+        orManualSelect: '— of selecteer handmatig —',
+        choiceCards: 'Keuzekaarten',
+        technologyCards: 'Technologiekaarten',
+        dominantValue: 'Dominante Waarde',
         recognizedCards: 'Herkende Kaarten',
         confirmOrAdjust: 'Bevestig of pas selecties aan:',
         confirmSelection: 'Bevestig Selectie',
@@ -992,6 +1056,10 @@
         phase1Instructions: 'Instructions',
         phase1InstructionsText: 'Arrange your 5 cards face-up: 3 choice cards (Resources, System, Value) and 2 technology cards. When ready, the moderator will photograph the arrangement.',
         clickToUpload: 'Click to upload photo of cards',
+        orManualSelect: '— or select manually —',
+        choiceCards: 'Choice Cards',
+        technologyCards: 'Technology Cards',
+        dominantValue: 'Dominant Value',
         recognizedCards: 'Recognized Cards',
         confirmOrAdjust: 'Confirm or adjust selections:',
         confirmSelection: 'Confirm Selection',
@@ -1332,18 +1400,21 @@
               tech2: result.tech2 || 'robotics'
             };
 
-            // Update dropdowns
-            document.getElementById('select-resources').value = appState.cards.resources;
-            document.getElementById('select-system').value = appState.cards.system;
-            document.getElementById('select-value').value = appState.cards.value;
-            document.getElementById('select-tech1').value = appState.cards.tech1;
-            document.getElementById('select-tech2').value = appState.cards.tech2;
+            // Update override dropdowns
+            document.getElementById('select-resources-override').value = appState.cards.resources;
+            document.getElementById('select-system-override').value = appState.cards.system;
+            document.getElementById('select-value-override').value = appState.cards.value;
+            document.getElementById('select-tech1-override').value = appState.cards.tech1;
+            document.getElementById('select-tech2-override').value = appState.cards.tech2;
 
+            // Hide manual selection, show recognition area
+            hide('manual-card-selection');
             renderCardSelection();
           }
         } catch (error) {
           console.error('Recognition error:', error);
           // Show manual override
+          hide('manual-card-selection');
           show('manual-override');
         }
       };
@@ -1373,10 +1444,33 @@
 
       appState.archetype = determineArchetype(appState.cards.resources, appState.cards.system);
 
+      // Hide manual selection form
+      hide('manual-card-selection');
+
       renderCardSelection();
       document.getElementById('archetype-name').textContent = appState.archetype;
       show('archetype-reveal');
       show('btn-generate-scenario');
+
+      syncStateToDatabase();
+    }
+
+    function confirmCardSelectionFromOverride() {
+      appState.cards = {
+        resources: document.getElementById('select-resources-override').value,
+        system: document.getElementById('select-system-override').value,
+        value: document.getElementById('select-value-override').value,
+        tech1: document.getElementById('select-tech1-override').value,
+        tech2: document.getElementById('select-tech2-override').value
+      };
+
+      appState.archetype = determineArchetype(appState.cards.resources, appState.cards.system);
+
+      renderCardSelection();
+      document.getElementById('archetype-name').textContent = appState.archetype;
+      show('archetype-reveal');
+      show('btn-generate-scenario');
+      hide('manual-override');
 
       syncStateToDatabase();
     }
