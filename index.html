@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Futures Exploration Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary: #000000;
+      --accent: #0000FF;
+      --background: #FFFFFF;
+      --border: #000000;
+      --gray: #666666;
+      --light-gray: #f5f5f5;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--primary);
+      background: var(--background);
+      padding: 16px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Typography */
+    h1, h2, h3, .mono {
+      font-family: 'Roboto Mono', monospace;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 500;
+      text-transform: uppercase;
+      text-decoration: underline;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gray);
+      margin-bottom: 8px;
+    }
+
+    /* Buttons */
+    button {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 14px;
+      font-weight: 500;
+      text-transform: uppercase;
+      background: var(--primary);
+      color: var(--background);
+      border: 2px solid var(--primary);
+      padding: 12px 24px;
+      cursor: pointer;
+      min-height: 44px;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: var(--background);
+      color: var(--primary);
+    }
+
+    button:disabled {
+      background: var(--gray);
+      border-color: var(--gray);
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: var(--background);
+      color: var(--primary);
+    }
+
+    button.secondary:hover {
+      background: var(--primary);
+      color: var(--background);
+    }
+
+    button.accent {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    button.accent:hover {
+      background: var(--background);
+      color: var(--accent);
+    }
+
+    button.full-width {
+      width: 100%;
+    }
+
+    /* Inputs */
+    input, select, textarea {
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      padding: 12px;
+      border: 2px solid var(--primary);
+      background: var(--background);
+      width: 100%;
+      min-height: 44px;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    /* Cards and containers */
+    .card {
+      border: 2px solid var(--primary);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card.highlight {
+      border-color: var(--accent);
+      background: #f0f0ff;
+    }
+
+    /* Sections */
+    .section {
+      margin-bottom: 32px;
+    }
+
+    /* Phase indicator */
+    .phase-indicator {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .phase-dot {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .phase-dot.active {
+      background: var(--primary);
+      color: var(--background);
+    }
+
+    .phase-dot.completed {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--background);
+    }
+
+    .phase-dot.clickable {
+      cursor: pointer;
+    }
+
+    /* Session code display */
+    .session-code {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-align: center;
+      padding: 24px;
+      border: 2px solid var(--primary);
+      margin: 16px 0;
+    }
+
+    /* Role buttons */
+    .role-buttons {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .role-buttons button {
+      flex: 1;
+    }
+
+    /* Language toggle */
+    .language-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .language-toggle button {
+      flex: 1;
+      padding: 8px 16px;
+    }
+
+    .language-toggle button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--light-gray);
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--light-gray);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Generated content */
+    .generated-content {
+      background: var(--light-gray);
+      padding: 16px;
+      border-left: 4px solid var(--accent);
+      margin: 16px 0;
+      white-space: pre-wrap;
+    }
+
+    /* Archetype reveal */
+    .archetype-reveal {
+      text-align: center;
+      padding: 32px;
+      border: 2px solid var(--accent);
+      background: #f0f0ff;
+      margin: 16px 0;
+    }
+
+    .archetype-name {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 32px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    /* Card selection display */
+    .card-selection {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .card-item {
+      padding: 12px;
+      border: 2px solid var(--primary);
+      text-align: center;
+    }
+
+    .card-item .card-type {
+      font-size: 12px;
+      color: var(--gray);
+      text-transform: uppercase;
+    }
+
+    .card-item .card-value {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    /* Photo upload */
+    .photo-upload {
+      border: 2px dashed var(--primary);
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      margin: 16px 0;
+    }
+
+    .photo-upload:hover {
+      border-color: var(--accent);
+      background: #f0f0ff;
+    }
+
+    .photo-upload input {
+      display: none;
+    }
+
+    /* Manual override */
+    .manual-override {
+      background: var(--light-gray);
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .manual-override .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    /* Dropdown selects */
+    .select-group {
+      margin-bottom: 12px;
+    }
+
+    .select-group label {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 4px;
+    }
+
+    /* Delta report */
+    .delta-report {
+      border: 2px solid var(--accent);
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .delta-original {
+      opacity: 0.6;
+      border-left: 4px solid var(--gray);
+      padding-left: 12px;
+      margin-top: 16px;
+    }
+
+    /* Hidden sections */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Moderator only elements */
+    .moderator-only {
+      display: none;
+    }
+
+    body.is-moderator .moderator-only {
+      display: block;
+    }
+
+    body.is-moderator button.moderator-only {
+      display: inline-block;
+    }
+
+    /* Error message */
+    .error {
+      background: #fee;
+      border: 2px solid #c00;
+      color: #c00;
+      padding: 12px;
+      margin: 16px 0;
+    }
+
+    /* Reconnecting banner */
+    .reconnecting-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--accent);
+      color: white;
+      text-align: center;
+      padding: 8px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 14px;
+      z-index: 1000;
+    }
+
+    /* Instructions box */
+    .instructions {
+      background: #fffde7;
+      border: 2px solid #ffc107;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .instructions h3 {
+      color: #f57c00;
+    }
+  </style>
+</head>
+<body>
+  <!-- Reconnecting Banner (hidden by default) -->
+  <div id="reconnecting-banner" class="reconnecting-banner hidden">
+    Reconnecting...
+  </div>
+
+  <!-- App Container -->
+  <div id="app">
+
+    <!-- Screen: Welcome / Role Selection -->
+    <div id="screen-welcome" class="screen">
+      <h1>Futures Exploration Tool</h1>
+      <p>Emerging Technologies & Migration 2050</p>
+
+      <div class="section">
+        <div class="label">Select Language</div>
+        <div class="language-toggle">
+          <button id="lang-nl" class="active" onclick="setLanguage('nl')">Nederlands</button>
+          <button id="lang-en" onclick="setLanguage('en')">English</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="label" data-lang-key="selectRole">Select Your Role</div>
+        <div class="role-buttons">
+          <button onclick="selectRole('moderator')" data-lang-key="startAsModerator">Start as Moderator</button>
+          <button class="secondary" onclick="selectRole('viewer')" data-lang-key="joinAsViewer">Join as Viewer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen: Moderator - Show Code -->
+    <div id="screen-moderator-code" class="screen hidden">
+      <h1 data-lang-key="sessionStarted">Session Started</h1>
+      <p data-lang-key="shareCode">Share this code with participants:</p>
+      <div class="session-code" id="display-session-code">-----</div>
+      <p data-lang-key="waitingForParticipants">Waiting for participants to join...</p>
+      <button onclick="goToPhase(1)" data-lang-key="beginWorkshop">Begin Workshop</button>
+    </div>
+
+    <!-- Screen: Viewer - Enter Code -->
+    <div id="screen-viewer-join" class="screen hidden">
+      <h1 data-lang-key="joinSession">Join Session</h1>
+      <p data-lang-key="enterCode">Enter the 5-character code:</p>
+      <input type="text" id="input-session-code" maxlength="5" placeholder="XXXXX" style="text-align: center; font-size: 32px; font-family: 'Roboto Mono', monospace; letter-spacing: 0.2em;">
+      <button onclick="joinSession()" style="margin-top: 16px;" class="full-width" data-lang-key="join">Join</button>
+      <div id="join-error" class="error hidden"></div>
+    </div>
+
+    <!-- Screen: Main Workshop -->
+    <div id="screen-workshop" class="screen hidden">
+
+      <!-- Phase Indicator -->
+      <div class="phase-indicator">
+        <div class="phase-dot clickable" data-phase="1" onclick="goToPhase(1)">1</div>
+        <div class="phase-dot clickable" data-phase="2" onclick="goToPhase(2)">2</div>
+        <div class="phase-dot clickable" data-phase="3" onclick="goToPhase(3)">3</div>
+        <div class="phase-dot clickable" data-phase="4" onclick="goToPhase(4)">4</div>
+        <div class="phase-dot clickable" data-phase="5" onclick="goToPhase(5)">5</div>
+        <div class="phase-dot clickable" data-phase="6" onclick="goToPhase(6)">6</div>
+      </div>
+
+      <!-- Phase 1: Scenario Foundation -->
+      <div id="phase-1" class="phase">
+        <h2 data-lang-key="phase1Title">Phase 1: Scenario Foundation</h2>
+
+        <div class="instructions">
+          <h3 data-lang-key="phase1Instructions">Instructions</h3>
+          <p data-lang-key="phase1InstructionsText">Arrange your 5 cards face-up: 3 choice cards (Resources, System, Value) and 2 technology cards. When ready, the moderator will photograph the arrangement.</p>
+        </div>
+
+        <!-- Photo Upload (Moderator only) -->
+        <div class="moderator-only">
+          <div class="photo-upload" onclick="document.getElementById('card-photo-input').click()">
+            <p data-lang-key="clickToUpload">Click to upload photo of cards</p>
+            <input type="file" id="card-photo-input" accept="image/*" capture="environment" onchange="handlePhotoUpload(event)">
+          </div>
+        </div>
+
+        <!-- Recognition Result / Manual Override -->
+        <div id="card-recognition-area" class="hidden">
+          <div class="label" data-lang-key="recognizedCards">Recognized Cards</div>
+
+          <div class="card-selection" id="card-display">
+            <!-- Filled dynamically -->
+          </div>
+
+          <!-- Manual Override (Moderator only) -->
+          <div id="manual-override" class="manual-override moderator-only">
+            <div class="label" data-lang-key="confirmOrAdjust">Confirm or adjust selections:</div>
+            <div class="grid">
+              <div class="select-group">
+                <label>Resources</label>
+                <select id="select-resources">
+                  <option value="abundance">Abundance</option>
+                  <option value="limits">Limits</option>
+                </select>
+              </div>
+              <div class="select-group">
+                <label>System</label>
+                <select id="select-system">
+                  <option value="stable">Stable</option>
+                  <option value="breaks">Breaks</option>
+                </select>
+              </div>
+              <div class="select-group">
+                <label>Dominant Value</label>
+                <select id="select-value">
+                  <option value="collective">Collective</option>
+                  <option value="individual">Individual</option>
+                </select>
+              </div>
+              <div class="select-group">
+                <label>Technology 1</label>
+                <select id="select-tech1">
+                  <option value="quantum">Quantum</option>
+                  <option value="robotics">Robotics</option>
+                  <option value="neurotech">Neurotech</option>
+                  <option value="biotech">Biotech</option>
+                  <option value="climate tech">Climate Tech</option>
+                  <option value="agi">AGI</option>
+                </select>
+              </div>
+              <div class="select-group">
+                <label>Technology 2</label>
+                <select id="select-tech2">
+                  <option value="quantum">Quantum</option>
+                  <option value="robotics">Robotics</option>
+                  <option value="neurotech">Neurotech</option>
+                  <option value="biotech">Biotech</option>
+                  <option value="climate tech">Climate Tech</option>
+                  <option value="agi">AGI</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="confirmCardSelection()" data-lang-key="confirmSelection">Confirm Selection</button>
+          </div>
+        </div>
+
+        <!-- Archetype Reveal -->
+        <div id="archetype-reveal" class="archetype-reveal hidden">
+          <div class="label" data-lang-key="yourFuture">Your future is:</div>
+          <div class="archetype-name" id="archetype-name"></div>
+        </div>
+
+        <!-- Generate Scenario Button (Moderator only) -->
+        <button id="btn-generate-scenario" class="moderator-only accent full-width hidden" onclick="generateScenario()" data-lang-key="generateScenario">Generate 2050 Scenario</button>
+
+        <!-- Loading State -->
+        <div id="loading-scenario" class="loading hidden">
+          <div class="spinner"></div>
+          <span data-lang-key="generatingScenario">Generating scenario...</span>
+        </div>
+
+        <!-- Generated Scenario -->
+        <div id="scenario-2050" class="hidden">
+          <h3 data-lang-key="scenario2050">2050 Scenario</h3>
+          <div class="generated-content" id="scenario-content"></div>
+          <button class="moderator-only full-width" onclick="goToPhase(2)" style="margin-top: 16px;" data-lang-key="continueToPhase2">Continue to Phase 2</button>
+        </div>
+      </div>
+
+      <!-- Phase 2: Backcasting 2040 -->
+      <div id="phase-2" class="phase hidden">
+        <h2 data-lang-key="phase2Title">Phase 2: Backcasting 2040</h2>
+
+        <div class="instructions">
+          <h3 data-lang-key="phase2Instructions">Instructions</h3>
+          <p data-lang-key="phase2InstructionsText">What developments in 2040 led to the 2050 scenario? Let's work backward to understand the path.</p>
+        </div>
+
+        <button id="btn-generate-2040" class="moderator-only accent full-width" onclick="generateBackcasting('2040')" data-lang-key="generateBackcasting2040">Generate 2040 Narrative</button>
+
+        <div id="loading-2040" class="loading hidden">
+          <div class="spinner"></div>
+          <span data-lang-key="generatingBackcasting">Generating backcasting narrative...</span>
+        </div>
+
+        <div id="backcasting-2040" class="hidden">
+          <h3>2040</h3>
+          <div class="generated-content" id="backcasting-2040-content"></div>
+        </div>
+
+        <!-- Vignette Section -->
+        <div id="vignette-section-2040" class="hidden">
+          <h3 data-lang-key="vignetteTitle">Optional: Day in the Life Vignette</h3>
+
+          <div class="moderator-only">
+            <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;">
+              <div class="select-group">
+                <label data-lang-key="selectActor">Actor</label>
+                <select id="select-actor-2040">
+                  <option value="">Select actor...</option>
+                  <option value="political party">Political Party</option>
+                  <option value="foreign state">Foreign State</option>
+                  <option value="citizens">Citizens</option>
+                  <option value="ngo">NGO</option>
+                  <option value="journalist">Journalist</option>
+                  <option value="research institution">Research Institution</option>
+                  <option value="municipality">Municipality</option>
+                  <option value="migrant community">Migrant Community</option>
+                  <option value="eu institution">EU Institution</option>
+                  <option value="employer">Employer / Business</option>
+                  <option value="custom">Custom...</option>
+                </select>
+                <input type="text" id="custom-actor-2040" placeholder="Enter custom actor" class="hidden" style="margin-top: 8px;">
+              </div>
+              <div class="select-group">
+                <label data-lang-key="selectLens">Lens</label>
+                <select id="select-lens-2040">
+                  <option value="">Select lens...</option>
+                  <option value="election">Election</option>
+                  <option value="economy">Economy</option>
+                  <option value="geopolitics">Geopolitics</option>
+                  <option value="climate">Climate</option>
+                  <option value="technology">Technology</option>
+                  <option value="security">Security</option>
+                  <option value="demographics">Demographics</option>
+                  <option value="law and rights">Law & Rights</option>
+                  <option value="public opinion">Public Opinion</option>
+                  <option value="housing">Housing</option>
+                  <option value="custom">Custom...</option>
+                </select>
+                <input type="text" id="custom-lens-2040" placeholder="Enter custom lens" class="hidden" style="margin-top: 8px;">
+              </div>
+            </div>
+            <button onclick="generateVignette('2040')" data-lang-key="generateVignette">Generate Vignette</button>
+          </div>
+
+          <div id="loading-vignette-2040" class="loading hidden">
+            <div class="spinner"></div>
+            <span data-lang-key="generatingVignette">Generating vignette...</span>
+          </div>
+
+          <div id="vignette-2040" class="hidden">
+            <div class="generated-content" id="vignette-2040-content"></div>
+          </div>
+        </div>
+
+        <button class="moderator-only full-width" onclick="goToPhase(3)" style="margin-top: 24px;" data-lang-key="continueToPhase3">Continue to Phase 3</button>
+      </div>
+
+      <!-- Phase 3: Backcasting 2035 -->
+      <div id="phase-3" class="phase hidden">
+        <h2 data-lang-key="phase3Title">Phase 3: Backcasting 2035</h2>
+
+        <div class="instructions">
+          <h3 data-lang-key="phase3Instructions">Instructions</h3>
+          <p data-lang-key="phase3InstructionsText">Moving closer to the present. What was happening around 2035 that set the stage?</p>
+        </div>
+
+        <button id="btn-generate-2035" class="moderator-only accent full-width" onclick="generateBackcasting('2035')" data-lang-key="generateBackcasting2035">Generate 2035 Narrative</button>
+
+        <div id="loading-2035" class="loading hidden">
+          <div class="spinner"></div>
+          <span data-lang-key="generatingBackcasting">Generating backcasting narrative...</span>
+        </div>
+
+        <div id="backcasting-2035" class="hidden">
+          <h3>2035</h3>
+          <div class="generated-content" id="backcasting-2035-content"></div>
+        </div>
+
+        <!-- Vignette Section 2035 -->
+        <div id="vignette-section-2035" class="hidden">
+          <h3 data-lang-key="vignetteTitle">Optional: Day in the Life Vignette</h3>
+
+          <div class="moderator-only">
+            <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;">
+              <div class="select-group">
+                <label data-lang-key="selectActor">Actor</label>
+                <select id="select-actor-2035">
+                  <option value="">Select actor...</option>
+                  <option value="political party">Political Party</option>
+                  <option value="foreign state">Foreign State</option>
+                  <option value="citizens">Citizens</option>
+                  <option value="ngo">NGO</option>
+                  <option value="journalist">Journalist</option>
+                  <option value="research institution">Research Institution</option>
+                  <option value="municipality">Municipality</option>
+                  <option value="migrant community">Migrant Community</option>
+                  <option value="eu institution">EU Institution</option>
+                  <option value="employer">Employer / Business</option>
+                  <option value="custom">Custom...</option>
+                </select>
+                <input type="text" id="custom-actor-2035" placeholder="Enter custom actor" class="hidden" style="margin-top: 8px;">
+              </div>
+              <div class="select-group">
+                <label data-lang-key="selectLens">Lens</label>
+                <select id="select-lens-2035">
+                  <option value="">Select lens...</option>
+                  <option value="election">Election</option>
+                  <option value="economy">Economy</option>
+                  <option value="geopolitics">Geopolitics</option>
+                  <option value="climate">Climate</option>
+                  <option value="technology">Technology</option>
+                  <option value="security">Security</option>
+                  <option value="demographics">Demographics</option>
+                  <option value="law and rights">Law & Rights</option>
+                  <option value="public opinion">Public Opinion</option>
+                  <option value="housing">Housing</option>
+                  <option value="custom">Custom...</option>
+                </select>
+                <input type="text" id="custom-lens-2035" placeholder="Enter custom lens" class="hidden" style="margin-top: 8px;">
+              </div>
+            </div>
+            <button onclick="generateVignette('2035')" data-lang-key="generateVignette">Generate Vignette</button>
+          </div>
+
+          <div id="loading-vignette-2035" class="loading hidden">
+            <div class="spinner"></div>
+            <span data-lang-key="generatingVignette">Generating vignette...</span>
+          </div>
+
+          <div id="vignette-2035" class="hidden">
+            <div class="generated-content" id="vignette-2035-content"></div>
+          </div>
+        </div>
+
+        <button class="moderator-only full-width" onclick="goToPhase(4)" style="margin-top: 24px;" data-lang-key="continueToPhase4">Continue to Phase 4</button>
+      </div>
+
+      <!-- Phase 4: Backcasting 2030 -->
+      <div id="phase-4" class="phase hidden">
+        <h2 data-lang-key="phase4Title">Phase 4: Backcasting 2030</h2>
+
+        <div class="instructions">
+          <h3 data-lang-key="phase4Instructions">Instructions</h3>
+          <p data-lang-key="phase4InstructionsText">Almost at the present. What decisions and developments around 2030 started this trajectory?</p>
+        </div>
+
+        <button id="btn-generate-2030" class="moderator-only accent full-width" onclick="generateBackcasting('2030')" data-lang-key="generateBackcasting2030">Generate 2030 Narrative</button>
+
+        <div id="loading-2030" class="loading hidden">
+          <div class="spinner"></div>
+          <span data-lang-key="generatingBackcasting">Generating backcasting narrative...</span>
+        </div>
+
+        <div id="backcasting-2030" class="hidden">
+          <h3>2030</h3>
+          <div class="generated-content" id="backcasting-2030-content"></div>
+        </div>
+
+        <!-- Vignette Section 2030 -->
+        <div id="vignette-section-2030" class="hidden">
+          <h3 data-lang-key="vignetteTitle">Optional: Day in the Life Vignette</h3>
+
+          <div class="moderator-only">
+            <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;">
+              <div class="select-group">
+                <label data-lang-key="selectActor">Actor</label>
+                <select id="select-actor-2030">
+                  <option value="">Select actor...</option>
+                  <option value="political party">Political Party</option>
+                  <option value="foreign state">Foreign State</option>
+                  <option value="citizens">Citizens</option>
+                  <option value="ngo">NGO</option>
+                  <option value="journalist">Journalist</option>
+                  <option value="research institution">Research Institution</option>
+                  <option value="municipality">Municipality</option>
+                  <option value="migrant community">Migrant Community</option>
+                  <option value="eu institution">EU Institution</option>
+                  <option value="employer">Employer / Business</option>
+                  <option value="custom">Custom...</option>
+                </select>
+                <input type="text" id="custom-actor-2030" placeholder="Enter custom actor" class="hidden" style="margin-top: 8px;">
+              </div>
+              <div class="select-group">
+                <label data-lang-key="selectLens">Lens</label>
+                <select id="select-lens-2030">
+                  <option value="">Select lens...</option>
+                  <option value="election">Election</option>
+                  <option value="economy">Economy</option>
+                  <option value="geopolitics">Geopolitics</option>
+                  <option value="climate">Climate</option>
+                  <option value="technology">Technology</option>
+                  <option value="security">Security</option>
+                  <option value="demographics">Demographics</option>
+                  <option value="law and rights">Law & Rights</option>
+                  <option value="public opinion">Public Opinion</option>
+                  <option value="housing">Housing</option>
+                  <option value="custom">Custom...</option>
+                </select>
+                <input type="text" id="custom-lens-2030" placeholder="Enter custom lens" class="hidden" style="margin-top: 8px;">
+              </div>
+            </div>
+            <button onclick="generateVignette('2030')" data-lang-key="generateVignette">Generate Vignette</button>
+          </div>
+
+          <div id="loading-vignette-2030" class="loading hidden">
+            <div class="spinner"></div>
+            <span data-lang-key="generatingVignette">Generating vignette...</span>
+          </div>
+
+          <div id="vignette-2030" class="hidden">
+            <div class="generated-content" id="vignette-2030-content"></div>
+          </div>
+        </div>
+
+        <button class="moderator-only full-width" onclick="goToPhase(5)" style="margin-top: 24px;" data-lang-key="continueToPhase5">Continue to Phase 5</button>
+      </div>
+
+      <!-- Phase 5: Strategic Intervention -->
+      <div id="phase-5" class="phase hidden">
+        <h2 data-lang-key="phase5Title">Phase 5: Strategic Intervention</h2>
+
+        <div class="instructions">
+          <h3 data-lang-key="phase5Instructions">Instructions</h3>
+          <p data-lang-key="phase5InstructionsText">You've seen one possible path to 2050. Now imagine you have the power to act. What ONE policy decision, strategic move, or intervention would you implement TODAY (2025) to change this trajectory?</p>
+        </div>
+
+        <div class="moderator-only">
+          <textarea id="intervention-input" placeholder="Describe your intervention (20-500 characters)..." maxlength="500"></textarea>
+          <div class="label" style="text-align: right;"><span id="intervention-char-count">0</span>/500</div>
+          <button onclick="submitIntervention()" style="margin-top: 8px;" class="full-width accent" data-lang-key="seeConsequences">See Consequences</button>
+        </div>
+
+        <div id="intervention-display" class="hidden">
+          <h3 data-lang-key="yourIntervention">Your Intervention</h3>
+          <div class="card highlight">
+            <p id="intervention-text"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 6: Consequences & Delta Report -->
+      <div id="phase-6" class="phase hidden">
+        <h2 data-lang-key="phase6Title">Phase 6: The Delta Report</h2>
+
+        <div id="loading-consequences" class="loading hidden">
+          <div class="spinner"></div>
+          <span data-lang-key="generatingConsequences">Generating consequences...</span>
+        </div>
+
+        <div id="delta-report" class="hidden">
+          <h3 data-lang-key="intervention">Your Intervention</h3>
+          <div class="card highlight">
+            <p id="delta-intervention"></p>
+          </div>
+
+          <h3 data-lang-key="consequences">Consequences</h3>
+          <div class="generated-content" id="consequences-content"></div>
+
+          <h3 data-lang-key="altered2050">Altered 2050 Scenario</h3>
+          <div class="generated-content" id="altered-scenario-content"></div>
+
+          <h3 data-lang-key="original2050">Original 2050 Scenario</h3>
+          <div class="delta-original" id="original-scenario-display"></div>
+
+          <button onclick="downloadPDF()" class="full-width" style="margin-top: 24px;" data-lang-key="downloadPDF">Download PDF Report</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // ===== CONFIGURATION =====
+    const SUPABASE_URL = 'https://vonatoqidrpaehmnsvfd.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvbmF0b3FpZHJwYWVobW5zdmZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1MjUwMzUsImV4cCI6MjA4NDEwMTAzNX0.K0uoZ-H3wp1bncYTXaLYFtW3tiaT8TUz9oCYEEnaOHc';
+
+    // Initialize Supabase client
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ===== APP STATE =====
+    let appState = {
+      role: null, // 'moderator' or 'viewer'
+      language: 'nl',
+      sessionCode: null,
+      currentPhase: 1,
+
+      // Phase 1
+      cards: {
+        resources: null,
+        system: null,
+        value: null,
+        tech1: null,
+        tech2: null
+      },
+      archetype: null,
+      scenario2050: null,
+
+      // Phases 2-4
+      backcasting: {
+        '2040': { narrative: null, vignette: null, actor: null, lens: null },
+        '2035': { narrative: null, vignette: null, actor: null, lens: null },
+        '2030': { narrative: null, vignette: null, actor: null, lens: null }
+      },
+
+      // Phases 5-6
+      intervention: null,
+      consequences: null,
+      alteredScenario: null
+    };
+
+    let realtimeChannel = null;
+
+    // ===== TRANSLATIONS =====
+    const translations = {
+      nl: {
+        selectRole: 'Selecteer je rol',
+        startAsModerator: 'Start als Moderator',
+        joinAsViewer: 'Deelnemen als Viewer',
+        sessionStarted: 'Sessie Gestart',
+        shareCode: 'Deel deze code met deelnemers:',
+        waitingForParticipants: 'Wachten op deelnemers...',
+        beginWorkshop: 'Begin Workshop',
+        joinSession: 'Sessie Deelnemen',
+        enterCode: 'Voer de 5-karakter code in:',
+        join: 'Deelnemen',
+        phase1Title: 'Fase 1: Scenario Fundament',
+        phase1Instructions: 'Instructies',
+        phase1InstructionsText: 'Leg je 5 kaarten open neer: 3 keuzekaarten (Resources, Systeem, Waarde) en 2 technologiekaarten. Als je klaar bent, maakt de moderator een foto.',
+        clickToUpload: 'Klik om foto van kaarten te uploaden',
+        recognizedCards: 'Herkende Kaarten',
+        confirmOrAdjust: 'Bevestig of pas selecties aan:',
+        confirmSelection: 'Bevestig Selectie',
+        yourFuture: 'Jouw toekomst is:',
+        generateScenario: 'Genereer 2050 Scenario',
+        generatingScenario: 'Scenario wordt gegenereerd...',
+        scenario2050: '2050 Scenario',
+        continueToPhase2: 'Ga naar Fase 2',
+        phase2Title: 'Fase 2: Backcasting 2040',
+        phase2Instructions: 'Instructies',
+        phase2InstructionsText: 'Welke ontwikkelingen in 2040 leidden tot het 2050 scenario? Laten we terugwerken om het pad te begrijpen.',
+        generateBackcasting2040: 'Genereer 2040 Narratief',
+        generatingBackcasting: 'Backcasting narratief wordt gegenereerd...',
+        vignetteTitle: 'Optioneel: Dag uit het Leven Vignet',
+        selectActor: 'Actor',
+        selectLens: 'Lens',
+        generateVignette: 'Genereer Vignet',
+        generatingVignette: 'Vignet wordt gegenereerd...',
+        continueToPhase3: 'Ga naar Fase 3',
+        phase3Title: 'Fase 3: Backcasting 2035',
+        phase3Instructions: 'Instructies',
+        phase3InstructionsText: 'Dichter bij het heden. Wat gebeurde er rond 2035 dat de basis legde?',
+        generateBackcasting2035: 'Genereer 2035 Narratief',
+        continueToPhase4: 'Ga naar Fase 4',
+        phase4Title: 'Fase 4: Backcasting 2030',
+        phase4Instructions: 'Instructies',
+        phase4InstructionsText: 'Bijna bij het heden. Welke beslissingen en ontwikkelingen rond 2030 startten dit traject?',
+        generateBackcasting2030: 'Genereer 2030 Narratief',
+        continueToPhase5: 'Ga naar Fase 5',
+        phase5Title: 'Fase 5: Strategische Interventie',
+        phase5Instructions: 'Instructies',
+        phase5InstructionsText: 'Je hebt \u00e9\u00e9n mogelijk pad naar 2050 gezien. Stel je nu voor dat je de macht hebt om te handelen. Welke ENE beleidsbeslissing, strategische zet of interventie zou je VANDAAG (2025) implementeren om dit traject te veranderen?',
+        seeConsequences: 'Bekijk Consequenties',
+        yourIntervention: 'Jouw Interventie',
+        phase6Title: 'Fase 6: Het Delta Rapport',
+        generatingConsequences: 'Consequenties worden gegenereerd...',
+        intervention: 'Jouw Interventie',
+        consequences: 'Consequenties',
+        altered2050: 'Aangepast 2050 Scenario',
+        original2050: 'Origineel 2050 Scenario',
+        downloadPDF: 'Download PDF Rapport'
+      },
+      en: {
+        selectRole: 'Select Your Role',
+        startAsModerator: 'Start as Moderator',
+        joinAsViewer: 'Join as Viewer',
+        sessionStarted: 'Session Started',
+        shareCode: 'Share this code with participants:',
+        waitingForParticipants: 'Waiting for participants to join...',
+        beginWorkshop: 'Begin Workshop',
+        joinSession: 'Join Session',
+        enterCode: 'Enter the 5-character code:',
+        join: 'Join',
+        phase1Title: 'Phase 1: Scenario Foundation',
+        phase1Instructions: 'Instructions',
+        phase1InstructionsText: 'Arrange your 5 cards face-up: 3 choice cards (Resources, System, Value) and 2 technology cards. When ready, the moderator will photograph the arrangement.',
+        clickToUpload: 'Click to upload photo of cards',
+        recognizedCards: 'Recognized Cards',
+        confirmOrAdjust: 'Confirm or adjust selections:',
+        confirmSelection: 'Confirm Selection',
+        yourFuture: 'Your future is:',
+        generateScenario: 'Generate 2050 Scenario',
+        generatingScenario: 'Generating scenario...',
+        scenario2050: '2050 Scenario',
+        continueToPhase2: 'Continue to Phase 2',
+        phase2Title: 'Phase 2: Backcasting 2040',
+        phase2Instructions: 'Instructions',
+        phase2InstructionsText: 'What developments in 2040 led to the 2050 scenario? Let\'s work backward to understand the path.',
+        generateBackcasting2040: 'Generate 2040 Narrative',
+        generatingBackcasting: 'Generating backcasting narrative...',
+        vignetteTitle: 'Optional: Day in the Life Vignette',
+        selectActor: 'Actor',
+        selectLens: 'Lens',
+        generateVignette: 'Generate Vignette',
+        generatingVignette: 'Generating vignette...',
+        continueToPhase3: 'Continue to Phase 3',
+        phase3Title: 'Phase 3: Backcasting 2035',
+        phase3Instructions: 'Instructions',
+        phase3InstructionsText: 'Moving closer to the present. What was happening around 2035 that set the stage?',
+        generateBackcasting2035: 'Generate 2035 Narrative',
+        continueToPhase4: 'Continue to Phase 4',
+        phase4Title: 'Phase 4: Backcasting 2030',
+        phase4Instructions: 'Instructions',
+        phase4InstructionsText: 'Almost at the present. What decisions and developments around 2030 started this trajectory?',
+        generateBackcasting2030: 'Generate 2030 Narrative',
+        continueToPhase5: 'Continue to Phase 5',
+        phase5Title: 'Phase 5: Strategic Intervention',
+        phase5Instructions: 'Instructions',
+        phase5InstructionsText: 'You\'ve seen one possible path to 2050. Now imagine you have the power to act. What ONE policy decision, strategic move, or intervention would you implement TODAY (2025) to change this trajectory?',
+        seeConsequences: 'See Consequences',
+        yourIntervention: 'Your Intervention',
+        phase6Title: 'Phase 6: The Delta Report',
+        generatingConsequences: 'Generating consequences...',
+        intervention: 'Your Intervention',
+        consequences: 'Consequences',
+        altered2050: 'Altered 2050 Scenario',
+        original2050: 'Original 2050 Scenario',
+        downloadPDF: 'Download PDF Report'
+      }
+    };
+
+    // ===== UTILITY FUNCTIONS =====
+    function show(id) {
+      document.getElementById(id)?.classList.remove('hidden');
+    }
+
+    function hide(id) {
+      document.getElementById(id)?.classList.add('hidden');
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+      show(screenId);
+    }
+
+    function generateSessionCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 5; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return code;
+    }
+
+    function determineArchetype(resources, system) {
+      if (resources === 'abundance' && system === 'stable') return 'Continued Growth';
+      if (resources === 'limits' && system === 'stable') return 'Discipline';
+      if (resources === 'limits' && system === 'breaks') return 'Collapse';
+      if (resources === 'abundance' && system === 'breaks') return 'Transformation';
+      return 'Unknown';
+    }
+
+    function applyTranslations() {
+      const lang = appState.language;
+      document.querySelectorAll('[data-lang-key]').forEach(el => {
+        const key = el.getAttribute('data-lang-key');
+        if (translations[lang]?.[key]) {
+          el.textContent = translations[lang][key];
+        }
+      });
+    }
+
+    // ===== LANGUAGE =====
+    function setLanguage(lang) {
+      appState.language = lang;
+      document.getElementById('lang-nl').classList.toggle('active', lang === 'nl');
+      document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+      applyTranslations();
+      if (appState.role === 'moderator') {
+        syncStateToDatabase();
+      }
+    }
+
+    // ===== ROLE SELECTION =====
+    async function selectRole(role) {
+      appState.role = role;
+
+      if (role === 'moderator') {
+        document.body.classList.add('is-moderator');
+        await createSession();
+        showScreen('screen-moderator-code');
+      } else {
+        document.body.classList.remove('is-moderator');
+        showScreen('screen-viewer-join');
+      }
+    }
+
+    // ===== SESSION MANAGEMENT =====
+    async function createSession() {
+      // Generate unique code
+      let code = generateSessionCode();
+      let attempts = 0;
+
+      while (attempts < 10) {
+        const { data: existing } = await supabase
+          .from('live_sessions')
+          .select('group_code')
+          .eq('group_code', code)
+          .single();
+
+        if (!existing) break;
+        code = generateSessionCode();
+        attempts++;
+      }
+
+      appState.sessionCode = code;
+
+      // Create session in database
+      const { error } = await supabase
+        .from('live_sessions')
+        .insert({
+          group_code: code,
+          app_state: appState
+        });
+
+      if (error) {
+        console.error('Error creating session:', error);
+        alert('Error creating session. Please try again.');
+        return;
+      }
+
+      document.getElementById('display-session-code').textContent = code;
+
+      // Subscribe to realtime updates
+      subscribeToSession(code);
+    }
+
+    async function joinSession() {
+      const codeInput = document.getElementById('input-session-code');
+      const code = codeInput.value.toUpperCase().trim();
+
+      if (code.length !== 5) {
+        showJoinError('Please enter a 5-character code');
+        return;
+      }
+
+      // Look up session
+      const { data, error } = await supabase
+        .from('live_sessions')
+        .select('*')
+        .eq('group_code', code)
+        .single();
+
+      if (error || !data) {
+        showJoinError('Session not found. Please check the code.');
+        return;
+      }
+
+      // Load state from moderator
+      const moderatorState = data.app_state;
+      appState = { ...moderatorState, role: 'viewer' };
+      appState.sessionCode = code;
+
+      // Apply language
+      setLanguage(appState.language);
+
+      // Subscribe to updates
+      subscribeToSession(code);
+
+      // Show workshop screen
+      showScreen('screen-workshop');
+      renderCurrentState();
+    }
+
+    function showJoinError(message) {
+      const errorDiv = document.getElementById('join-error');
+      errorDiv.textContent = message;
+      show('join-error');
+    }
+
+    function subscribeToSession(code) {
+      realtimeChannel = supabase
+        .channel(`session-${code}`)
+        .on('postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'live_sessions', filter: `group_code=eq.${code}` },
+          (payload) => {
+            if (appState.role === 'viewer') {
+              const newState = payload.new.app_state;
+              appState = { ...newState, role: 'viewer', sessionCode: code };
+              renderCurrentState();
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('Subscribed to session:', code);
+          }
+        });
+    }
+
+    async function syncStateToDatabase() {
+      if (appState.role !== 'moderator' || !appState.sessionCode) return;
+
+      const { error } = await supabase
+        .from('live_sessions')
+        .update({ app_state: appState, updated_at: new Date().toISOString() })
+        .eq('group_code', appState.sessionCode);
+
+      if (error) {
+        console.error('Sync error:', error);
+      }
+    }
+
+    // ===== PHASE NAVIGATION =====
+    function goToPhase(phase) {
+      appState.currentPhase = phase;
+
+      // Update phase indicators
+      document.querySelectorAll('.phase-dot').forEach(dot => {
+        const dotPhase = parseInt(dot.dataset.phase);
+        dot.classList.remove('active', 'completed');
+        if (dotPhase === phase) {
+          dot.classList.add('active');
+        } else if (dotPhase < phase) {
+          dot.classList.add('completed');
+        }
+      });
+
+      // Show correct phase
+      document.querySelectorAll('.phase').forEach(p => p.classList.add('hidden'));
+      show(`phase-${phase}`);
+
+      // Ensure we're on the workshop screen
+      showScreen('screen-workshop');
+
+      if (appState.role === 'moderator') {
+        syncStateToDatabase();
+      }
+    }
+
+    function renderCurrentState() {
+      // Apply language
+      setLanguage(appState.language);
+
+      // Update phase display
+      goToPhase(appState.currentPhase);
+
+      // Render Phase 1 content if exists
+      if (appState.cards.resources) {
+        renderCardSelection();
+      }
+      if (appState.archetype) {
+        document.getElementById('archetype-name').textContent = appState.archetype;
+        show('archetype-reveal');
+        show('btn-generate-scenario');
+      }
+      if (appState.scenario2050) {
+        document.getElementById('scenario-content').textContent = appState.scenario2050;
+        show('scenario-2050');
+      }
+
+      // Render backcasting content
+      ['2040', '2035', '2030'].forEach(year => {
+        if (appState.backcasting[year].narrative) {
+          document.getElementById(`backcasting-${year}-content`).textContent = appState.backcasting[year].narrative;
+          show(`backcasting-${year}`);
+          show(`vignette-section-${year}`);
+        }
+        if (appState.backcasting[year].vignette) {
+          document.getElementById(`vignette-${year}-content`).textContent = appState.backcasting[year].vignette;
+          show(`vignette-${year}`);
+        }
+      });
+
+      // Render intervention
+      if (appState.intervention) {
+        document.getElementById('intervention-text').textContent = appState.intervention;
+        show('intervention-display');
+      }
+
+      // Render delta report
+      if (appState.consequences) {
+        document.getElementById('delta-intervention').textContent = appState.intervention;
+        document.getElementById('consequences-content').textContent = appState.consequences;
+        document.getElementById('altered-scenario-content').textContent = appState.alteredScenario;
+        document.getElementById('original-scenario-display').textContent = appState.scenario2050;
+        show('delta-report');
+      }
+    }
+
+    // ===== PHASE 1: CARD RECOGNITION =====
+    async function handlePhotoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const base64 = e.target.result.split(',')[1];
+        const mimeType = file.type;
+
+        show('card-recognition-area');
+
+        try {
+          const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'recognize',
+              payload: { imageBase64: base64, mimeType }
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.success && data.result) {
+            const result = data.result;
+
+            // Update state
+            appState.cards = {
+              resources: result.resources || 'abundance',
+              system: result.system || 'stable',
+              value: result.value || 'collective',
+              tech1: result.tech1 || 'quantum',
+              tech2: result.tech2 || 'robotics'
+            };
+
+            // Update dropdowns
+            document.getElementById('select-resources').value = appState.cards.resources;
+            document.getElementById('select-system').value = appState.cards.system;
+            document.getElementById('select-value').value = appState.cards.value;
+            document.getElementById('select-tech1').value = appState.cards.tech1;
+            document.getElementById('select-tech2').value = appState.cards.tech2;
+
+            renderCardSelection();
+          }
+        } catch (error) {
+          console.error('Recognition error:', error);
+          // Show manual override
+          show('manual-override');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderCardSelection() {
+      const display = document.getElementById('card-display');
+      display.innerHTML = `
+        <div class="card-item"><div class="card-type">Resources</div><div class="card-value">${appState.cards.resources}</div></div>
+        <div class="card-item"><div class="card-type">System</div><div class="card-value">${appState.cards.system}</div></div>
+        <div class="card-item"><div class="card-type">Value</div><div class="card-value">${appState.cards.value}</div></div>
+        <div class="card-item"><div class="card-type">Tech 1</div><div class="card-value">${appState.cards.tech1}</div></div>
+        <div class="card-item"><div class="card-type">Tech 2</div><div class="card-value">${appState.cards.tech2}</div></div>
+      `;
+      show('card-recognition-area');
+    }
+
+    function confirmCardSelection() {
+      appState.cards = {
+        resources: document.getElementById('select-resources').value,
+        system: document.getElementById('select-system').value,
+        value: document.getElementById('select-value').value,
+        tech1: document.getElementById('select-tech1').value,
+        tech2: document.getElementById('select-tech2').value
+      };
+
+      appState.archetype = determineArchetype(appState.cards.resources, appState.cards.system);
+
+      renderCardSelection();
+      document.getElementById('archetype-name').textContent = appState.archetype;
+      show('archetype-reveal');
+      show('btn-generate-scenario');
+
+      syncStateToDatabase();
+    }
+
+    // ===== PHASE 1: SCENARIO GENERATION =====
+    async function generateScenario() {
+      hide('btn-generate-scenario');
+      show('loading-scenario');
+
+      try {
+        // Fetch prompt from Supabase
+        const { data: promptData } = await supabase
+          .from('prompts')
+          .select('prompt_text')
+          .eq('name', 'scenario_writing')
+          .single();
+
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'scenario',
+            payload: {
+              archetype: appState.archetype,
+              value: appState.cards.value,
+              tech1: appState.cards.tech1,
+              tech2: appState.cards.tech2,
+              language: appState.language,
+              prompt: promptData?.prompt_text
+            }
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          appState.scenario2050 = data.result;
+          document.getElementById('scenario-content').textContent = data.result;
+          show('scenario-2050');
+          syncStateToDatabase();
+        }
+      } catch (error) {
+        console.error('Scenario generation error:', error);
+        show('btn-generate-scenario');
+      }
+
+      hide('loading-scenario');
+    }
+
+    // ===== PHASES 2-4: BACKCASTING =====
+    async function generateBackcasting(year) {
+      hide(`btn-generate-${year}`);
+      show(`loading-${year}`);
+
+      try {
+        // Fetch prompt from Supabase
+        const { data: promptData } = await supabase
+          .from('prompts')
+          .select('prompt_text')
+          .eq('name', 'backcasting')
+          .single();
+
+        // Collect previous phases
+        let previousPhases = '';
+        if (year === '2035' && appState.backcasting['2040'].narrative) {
+          previousPhases = `2040: ${appState.backcasting['2040'].narrative}`;
+        }
+        if (year === '2030') {
+          if (appState.backcasting['2040'].narrative) {
+            previousPhases += `2040: ${appState.backcasting['2040'].narrative}\n\n`;
+          }
+          if (appState.backcasting['2035'].narrative) {
+            previousPhases += `2035: ${appState.backcasting['2035'].narrative}`;
+          }
+        }
+
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'backcasting',
+            payload: {
+              year,
+              scenario2050: appState.scenario2050,
+              archetype: appState.archetype,
+              value: appState.cards.value,
+              tech1: appState.cards.tech1,
+              tech2: appState.cards.tech2,
+              previousPhases,
+              language: appState.language,
+              prompt: promptData?.prompt_text
+            }
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          appState.backcasting[year].narrative = data.result;
+          document.getElementById(`backcasting-${year}-content`).textContent = data.result;
+          show(`backcasting-${year}`);
+          show(`vignette-section-${year}`);
+          syncStateToDatabase();
+        }
+      } catch (error) {
+        console.error('Backcasting generation error:', error);
+        show(`btn-generate-${year}`);
+      }
+
+      hide(`loading-${year}`);
+    }
+
+    // ===== VIGNETTES =====
+    // Handle custom actor/lens visibility
+    document.querySelectorAll('select[id^="select-actor-"]').forEach(select => {
+      select.addEventListener('change', function() {
+        const year = this.id.split('-').pop();
+        const customInput = document.getElementById(`custom-actor-${year}`);
+        if (this.value === 'custom') {
+          customInput.classList.remove('hidden');
+        } else {
+          customInput.classList.add('hidden');
+        }
+      });
+    });
+
+    document.querySelectorAll('select[id^="select-lens-"]').forEach(select => {
+      select.addEventListener('change', function() {
+        const year = this.id.split('-').pop();
+        const customInput = document.getElementById(`custom-lens-${year}`);
+        if (this.value === 'custom') {
+          customInput.classList.remove('hidden');
+        } else {
+          customInput.classList.add('hidden');
+        }
+      });
+    });
+
+    async function generateVignette(year) {
+      const actorSelect = document.getElementById(`select-actor-${year}`);
+      const lensSelect = document.getElementById(`select-lens-${year}`);
+
+      let actor = actorSelect.value;
+      let lens = lensSelect.value;
+
+      if (actor === 'custom') {
+        actor = document.getElementById(`custom-actor-${year}`).value;
+      }
+      if (lens === 'custom') {
+        lens = document.getElementById(`custom-lens-${year}`).value;
+      }
+
+      if (!actor || !lens) {
+        alert('Please select both an actor and a lens');
+        return;
+      }
+
+      show(`loading-vignette-${year}`);
+
+      try {
+        // Fetch prompt from Supabase
+        const { data: promptData } = await supabase
+          .from('prompts')
+          .select('prompt_text')
+          .eq('name', 'vignette')
+          .single();
+
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'vignette',
+            payload: {
+              year,
+              actor,
+              lens,
+              archetype: appState.archetype,
+              value: appState.cards.value,
+              tech1: appState.cards.tech1,
+              tech2: appState.cards.tech2,
+              backcastingNarrative: appState.backcasting[year].narrative,
+              language: appState.language,
+              prompt: promptData?.prompt_text
+            }
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          appState.backcasting[year].vignette = data.result;
+          appState.backcasting[year].actor = actor;
+          appState.backcasting[year].lens = lens;
+          document.getElementById(`vignette-${year}-content`).textContent = data.result;
+          show(`vignette-${year}`);
+          syncStateToDatabase();
+        }
+      } catch (error) {
+        console.error('Vignette generation error:', error);
+      }
+
+      hide(`loading-vignette-${year}`);
+    }
+
+    // ===== PHASE 5: INTERVENTION =====
+    const interventionInput = document.getElementById('intervention-input');
+    interventionInput?.addEventListener('input', function() {
+      document.getElementById('intervention-char-count').textContent = this.value.length;
+    });
+
+    async function submitIntervention() {
+      const input = document.getElementById('intervention-input');
+      const text = input.value.trim();
+
+      if (text.length < 20) {
+        alert('Please enter at least 20 characters');
+        return;
+      }
+
+      appState.intervention = text;
+      document.getElementById('intervention-text').textContent = text;
+      show('intervention-display');
+
+      syncStateToDatabase();
+
+      // Move to Phase 6 and generate consequences
+      goToPhase(6);
+      await generateConsequences();
+    }
+
+    // ===== PHASE 6: CONSEQUENCES =====
+    async function generateConsequences() {
+      show('loading-consequences');
+
+      try {
+        // Fetch prompt from Supabase
+        const { data: promptData } = await supabase
+          .from('prompts')
+          .select('prompt_text')
+          .eq('name', 'consequence_generation')
+          .single();
+
+        // Build backcasting journey
+        const backcastingJourney = `
+2040: ${appState.backcasting['2040'].narrative || 'Not generated'}
+
+2035: ${appState.backcasting['2035'].narrative || 'Not generated'}
+
+2030: ${appState.backcasting['2030'].narrative || 'Not generated'}
+        `.trim();
+
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'consequence',
+            payload: {
+              intervention: appState.intervention,
+              scenario2050: appState.scenario2050,
+              archetype: appState.archetype,
+              value: appState.cards.value,
+              tech1: appState.cards.tech1,
+              tech2: appState.cards.tech2,
+              backcastingJourney,
+              language: appState.language,
+              prompt: promptData?.prompt_text
+            }
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Parse consequences - the result contains everything
+          // For simplicity, store the full result and extract altered scenario
+          const fullResult = data.result;
+
+          // Try to split out the altered scenario
+          const alteredMatch = fullResult.match(/Altered 2050[:\s]*([\s\S]*?)(?:$)/i);
+
+          appState.consequences = fullResult;
+          appState.alteredScenario = alteredMatch ? alteredMatch[1].trim() : fullResult;
+
+          document.getElementById('delta-intervention').textContent = appState.intervention;
+          document.getElementById('consequences-content').textContent = fullResult;
+          document.getElementById('altered-scenario-content').textContent = appState.alteredScenario;
+          document.getElementById('original-scenario-display').textContent = appState.scenario2050;
+
+          show('delta-report');
+          syncStateToDatabase();
+
+          // Also save to permanent sessions table
+          await saveCompletedSession();
+        }
+      } catch (error) {
+        console.error('Consequence generation error:', error);
+      }
+
+      hide('loading-consequences');
+    }
+
+    async function saveCompletedSession() {
+      const { error } = await supabase
+        .from('sessions')
+        .insert({
+          group_code: appState.sessionCode,
+          app_state: appState,
+          language: appState.language,
+          completed_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error saving completed session:', error);
+      }
+    }
+
+    // ===== PDF EXPORT =====
+    function downloadPDF() {
+      // For now, create a simple text export
+      // Full PDF implementation would require a library or server-side generation
+      const content = `
+FUTURES EXPLORATION TOOL - SESSION REPORT
+==========================================
+Session Code: ${appState.sessionCode}
+Language: ${appState.language.toUpperCase()}
+Generated: ${new Date().toLocaleString()}
+
+CARD SELECTION
+--------------
+Resources: ${appState.cards.resources}
+System: ${appState.cards.system}
+Dominant Value: ${appState.cards.value}
+Technology 1: ${appState.cards.tech1}
+Technology 2: ${appState.cards.tech2}
+
+ARCHETYPE: ${appState.archetype}
+
+2050 SCENARIO
+-------------
+${appState.scenario2050}
+
+BACKCASTING: 2040
+-----------------
+${appState.backcasting['2040'].narrative || 'Not generated'}
+
+${appState.backcasting['2040'].vignette ? `Vignette (${appState.backcasting['2040'].actor} + ${appState.backcasting['2040'].lens}):\n${appState.backcasting['2040'].vignette}` : ''}
+
+BACKCASTING: 2035
+-----------------
+${appState.backcasting['2035'].narrative || 'Not generated'}
+
+${appState.backcasting['2035'].vignette ? `Vignette (${appState.backcasting['2035'].actor} + ${appState.backcasting['2035'].lens}):\n${appState.backcasting['2035'].vignette}` : ''}
+
+BACKCASTING: 2030
+-----------------
+${appState.backcasting['2030'].narrative || 'Not generated'}
+
+${appState.backcasting['2030'].vignette ? `Vignette (${appState.backcasting['2030'].actor} + ${appState.backcasting['2030'].lens}):\n${appState.backcasting['2030'].vignette}` : ''}
+
+STRATEGIC INTERVENTION
+----------------------
+${appState.intervention}
+
+CONSEQUENCES & DELTA REPORT
+---------------------------
+${appState.consequences}
+
+==========================================
+Generated with Futures Exploration Tool
+      `.trim();
+
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `futures-report-${appState.sessionCode}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // ===== INITIALIZATION =====
+    document.addEventListener('DOMContentLoaded', () => {
+      applyTranslations();
+    });
+  </script>
+</body>
+</html>
