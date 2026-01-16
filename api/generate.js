@@ -53,7 +53,7 @@ module.exports = async function handler(req, res) {
 
 // Call Gemini API
 async function callGemini(apiKey, contents, systemInstruction = null) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
   const body = { contents };
   if (systemInstruction) {
