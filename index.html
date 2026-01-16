@@ -221,6 +221,49 @@
       visibility: hidden;
     }
 
+    /* Moderator sync notification for viewers */
+    .sync-notification {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      background: var(--accent);
+      color: white;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 200;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .sync-notification button {
+      background: white;
+      color: var(--accent);
+      padding: 8px 16px;
+      min-height: 36px;
+      font-size: 12px;
+    }
+
+    .sync-notification .dismiss {
+      background: transparent;
+      color: white;
+      padding: 8px;
+      min-height: auto;
+      opacity: 0.8;
+    }
+
+    .sync-notification .dismiss:hover {
+      opacity: 1;
+    }
+
     /* Session code display */
     .session-code {
       font-family: 'Roboto Mono', monospace;
@@ -630,6 +673,15 @@
     <!-- Screen: Main Workshop -->
     <div id="screen-workshop" class="screen hidden">
 
+      <!-- Sync notification for viewers -->
+      <div id="sync-notification" class="sync-notification hidden">
+        <span id="sync-notification-text">Moderator moved to Phase 2</span>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="goToModeratorPhase()" data-lang-key="goToPhase">Go there</button>
+          <button class="dismiss" onclick="dismissSyncNotification()">✕</button>
+        </div>
+      </div>
+
       <!-- Phase Indicator - Dots -->
       <div class="phase-indicator">
         <div class="phase-dot" data-phase="1"></div>
@@ -996,10 +1048,17 @@
           <p data-lang-key="phase5InstructionsText">You have a 2050 future scenario in mind. What decision or intervention would you implement today, anticipating the short-term developments this scenario predicts?</p>
         </div>
 
-        <div class="moderator-only">
-          <textarea id="intervention-input" placeholder="Describe your intervention..." maxlength="500" data-lang-key-placeholder="interventionPlaceholder"></textarea>
+        <!-- Moderator: editable textarea -->
+        <div class="moderator-only" id="intervention-moderator">
+          <textarea id="intervention-input" placeholder="Describe your intervention..." maxlength="500" data-lang-key-placeholder="interventionPlaceholder" oninput="onInterventionInput()"></textarea>
           <div class="label" style="text-align: right; margin-top: 8px;"><span id="intervention-char-count">0</span>/500</div>
           <button onclick="submitIntervention()" style="margin-top: 8px;" class="full-width accent" data-lang-key="seeConsequences">See Consequences</button>
+        </div>
+
+        <!-- Viewer: readonly textarea showing moderator's typing -->
+        <div id="intervention-viewer" class="hidden">
+          <h3 data-lang-key="yourIntervention">Your Intervention</h3>
+          <textarea id="intervention-viewer-display" readonly placeholder="Waiting for moderator to type..." style="background: var(--light-gray); cursor: default;"></textarea>
         </div>
 
         <div id="intervention-display" class="hidden">
@@ -1047,36 +1106,62 @@
           <p data-lang-key="phase7InstructionsText">Before we finish, please share your team name and key insights from today's session.</p>
         </div>
 
-        <div class="section">
-          <div class="select-group">
-            <label data-lang-key="teamName">Team Name</label>
-            <input type="text" id="team-name-input" placeholder="Enter your team name..." maxlength="100">
+        <!-- Moderator: editable inputs -->
+        <div class="moderator-only" id="phase7-moderator">
+          <div class="section">
+            <div class="select-group">
+              <label data-lang-key="teamName">Team Name</label>
+              <input type="text" id="team-name-input" placeholder="Enter your team name..." maxlength="100" oninput="onPhase7Input()">
+            </div>
           </div>
+
+          <div class="section">
+            <div class="label" data-lang-key="keyInsights">Key Insights</div>
+            <div class="insight-input">
+              <label>Insight 1 <span class="required">*</span></label>
+              <input type="text" id="insight-1" placeholder="What was your first key insight?" maxlength="200" oninput="onPhase7Input()">
+            </div>
+            <div class="insight-input">
+              <label>Insight 2 <span class="required">*</span></label>
+              <input type="text" id="insight-2" placeholder="What was your second key insight?" maxlength="200" oninput="onPhase7Input()">
+            </div>
+            <div class="insight-input">
+              <label>Insight 3 <span style="color: var(--text-muted);">(optional)</span></label>
+              <input type="text" id="insight-3" placeholder="Any additional insight?" maxlength="200" oninput="onPhase7Input()">
+            </div>
+          </div>
+
+          <button onclick="downloadPDF()" class="full-width accent" data-lang-key="downloadPDF">Download PDF Report</button>
+          <button onclick="endSession()" class="full-width secondary" style="margin-top: 12px;" data-lang-key="endSession">End Session</button>
         </div>
 
-        <div class="section">
-          <div class="label" data-lang-key="keyInsights">Key Insights</div>
-          <div class="insight-input">
-            <label>Insight 1 <span class="required">*</span></label>
-            <input type="text" id="insight-1" placeholder="What was your first key insight?" maxlength="200">
+        <!-- Viewer: read-only display -->
+        <div id="phase7-viewer" class="hidden">
+          <div class="section">
+            <div class="label" data-lang-key="teamName">Team Name</div>
+            <div class="card" id="viewer-team-name" style="min-height: 48px; color: var(--gray);">Waiting for moderator...</div>
           </div>
-          <div class="insight-input">
-            <label>Insight 2 <span class="required">*</span></label>
-            <input type="text" id="insight-2" placeholder="What was your second key insight?" maxlength="200">
-          </div>
-          <div class="insight-input">
-            <label>Insight 3 <span style="color: var(--text-muted);">(optional)</span></label>
-            <input type="text" id="insight-3" placeholder="Any additional insight?" maxlength="200">
+
+          <div class="section">
+            <div class="label" data-lang-key="keyInsights">Key Insights</div>
+            <div class="card" style="margin-bottom: 8px;">
+              <div class="label" style="margin-bottom: 4px;">Insight 1</div>
+              <div id="viewer-insight-1" style="color: var(--gray);">Waiting for moderator...</div>
+            </div>
+            <div class="card" style="margin-bottom: 8px;">
+              <div class="label" style="margin-bottom: 4px;">Insight 2</div>
+              <div id="viewer-insight-2" style="color: var(--gray);">Waiting for moderator...</div>
+            </div>
+            <div class="card">
+              <div class="label" style="margin-bottom: 4px;">Insight 3 <span style="color: var(--text-muted);">(optional)</span></div>
+              <div id="viewer-insight-3" style="color: var(--gray);">—</div>
+            </div>
           </div>
         </div>
-
-        <button onclick="downloadPDF()" class="full-width accent" data-lang-key="downloadPDF">Download PDF Report</button>
-
-        <button onclick="endSession()" class="full-width secondary" style="margin-top: 12px;" data-lang-key="endSession">End Session</button>
       </div>
 
-      <!-- Navigation Buttons -->
-      <div class="phase-navigation moderator-only">
+      <!-- Navigation Buttons (visible for both moderator and viewer) -->
+      <div class="phase-navigation">
         <button id="btn-prev-phase" class="secondary" onclick="prevPhase()" data-lang-key="back">Back</button>
         <button id="btn-next-phase" onclick="nextPhase()" data-lang-key="next">Next</button>
       </div>
@@ -1132,6 +1217,7 @@
         '2030': { narrative: null, vignette: null, actor: null, lens: null }
       },
       intervention: null,
+      interventionDraft: '',
       consequences: null,
       alteredScenario: null,
       keyDifferences: null,
@@ -1140,6 +1226,10 @@
     };
 
     let realtimeChannel = null;
+    let viewerCurrentPhase = 1; // Track viewer's browsing phase separately
+    let moderatorPhase = 1; // Track moderator's actual phase
+    let syncNotificationTimeout = null;
+    let debounceTimers = {};
 
     // ===== TRANSLATIONS =====
     const translations = {
@@ -1207,7 +1297,10 @@
         thankYouMessage: 'Hartelijk dank voor het delen van uw waardevolle perspectieven op de toekomst.',
         startNewSession: 'Start Nieuwe Sessie',
         back: 'Terug',
-        next: 'Volgende'
+        next: 'Volgende',
+        goToPhase: 'Ga erheen',
+        moderatorMovedTo: 'De moderator is naar Fase {phase} gegaan',
+        waitingForModerator: 'Wachten op moderator...'
       },
       en: {
         start: 'Start',
@@ -1273,7 +1366,10 @@
         thankYouMessage: 'Thank you for sharing your valuable perspectives on the future.',
         startNewSession: 'Start New Session',
         back: 'Back',
-        next: 'Next'
+        next: 'Next',
+        goToPhase: 'Go there',
+        moderatorMovedTo: 'Moderator moved to Phase {phase}',
+        waitingForModerator: 'Waiting for moderator...'
       }
     };
 
@@ -1336,6 +1432,69 @@
         return line;
       });
       return formatted.join('\n');
+    }
+
+    // Debounce function for input syncing
+    function debounce(key, fn, delay = 500) {
+      if (debounceTimers[key]) {
+        clearTimeout(debounceTimers[key]);
+      }
+      debounceTimers[key] = setTimeout(fn, delay);
+    }
+
+    // ===== VIEWER SYNC NOTIFICATION =====
+    function showSyncNotification(phase) {
+      const notification = document.getElementById('sync-notification');
+      const text = document.getElementById('sync-notification-text');
+      const message = translations[appState.language].moderatorMovedTo.replace('{phase}', phase);
+      text.textContent = message;
+      notification.classList.remove('hidden');
+
+      // Auto-navigate after 5 seconds
+      if (syncNotificationTimeout) clearTimeout(syncNotificationTimeout);
+      syncNotificationTimeout = setTimeout(() => {
+        goToModeratorPhase();
+      }, 5000);
+    }
+
+    function dismissSyncNotification() {
+      const notification = document.getElementById('sync-notification');
+      notification.classList.add('hidden');
+      if (syncNotificationTimeout) {
+        clearTimeout(syncNotificationTimeout);
+        syncNotificationTimeout = null;
+      }
+    }
+
+    function goToModeratorPhase() {
+      dismissSyncNotification();
+      viewerCurrentPhase = moderatorPhase;
+      goToPhase(moderatorPhase);
+    }
+
+    // ===== REAL-TIME INPUT HANDLERS =====
+    function onInterventionInput() {
+      const input = document.getElementById('intervention-input');
+      document.getElementById('intervention-char-count').textContent = input.value.length;
+
+      // Debounce sync to database
+      debounce('intervention', () => {
+        appState.interventionDraft = input.value;
+        syncStateToDatabase();
+      }, 300);
+    }
+
+    function onPhase7Input() {
+      // Debounce sync to database
+      debounce('phase7', () => {
+        appState.teamName = document.getElementById('team-name-input').value;
+        appState.insights = {
+          insight1: document.getElementById('insight-1').value,
+          insight2: document.getElementById('insight-2').value,
+          insight3: document.getElementById('insight-3').value
+        };
+        syncStateToDatabase();
+      }, 300);
     }
 
     // ===== LANGUAGE =====
@@ -1443,12 +1602,101 @@
           (payload) => {
             if (appState.role === 'viewer') {
               const newState = payload.new.app_state;
+              const oldModeratorPhase = moderatorPhase;
+              moderatorPhase = newState.currentPhase;
+
+              // Check if moderator moved to a NEW phase (not just navigating)
+              if (moderatorPhase > oldModeratorPhase && viewerCurrentPhase !== moderatorPhase) {
+                showSyncNotification(moderatorPhase);
+              }
+
+              // Update appState but preserve viewer's current phase
               appState = { ...newState, role: 'viewer', sessionCode: code };
-              renderCurrentState();
+
+              // Update viewer displays without changing their phase
+              updateViewerDisplays();
             }
           }
         )
         .subscribe();
+    }
+
+    function updateViewerDisplays() {
+      // Update intervention draft display
+      if (appState.interventionDraft) {
+        const viewerDisplay = document.getElementById('intervention-viewer-display');
+        if (viewerDisplay) {
+          viewerDisplay.value = appState.interventionDraft;
+        }
+      }
+
+      // Update Phase 7 viewer displays
+      const teamNameDisplay = document.getElementById('viewer-team-name');
+      if (teamNameDisplay) {
+        teamNameDisplay.textContent = appState.teamName || translations[appState.language].waitingForModerator;
+        teamNameDisplay.style.color = appState.teamName ? 'var(--primary)' : 'var(--gray)';
+      }
+
+      const insight1Display = document.getElementById('viewer-insight-1');
+      if (insight1Display) {
+        insight1Display.textContent = appState.insights?.insight1 || translations[appState.language].waitingForModerator;
+        insight1Display.style.color = appState.insights?.insight1 ? 'var(--primary)' : 'var(--gray)';
+      }
+
+      const insight2Display = document.getElementById('viewer-insight-2');
+      if (insight2Display) {
+        insight2Display.textContent = appState.insights?.insight2 || translations[appState.language].waitingForModerator;
+        insight2Display.style.color = appState.insights?.insight2 ? 'var(--primary)' : 'var(--gray)';
+      }
+
+      const insight3Display = document.getElementById('viewer-insight-3');
+      if (insight3Display) {
+        insight3Display.textContent = appState.insights?.insight3 || '—';
+        insight3Display.style.color = appState.insights?.insight3 ? 'var(--primary)' : 'var(--gray)';
+      }
+
+      // Update any generated content that may have changed
+      if (appState.scenario2050) {
+        document.getElementById('scenario-content').innerHTML = formatGeneratedContent(appState.scenario2050);
+        show('scenario-2050');
+      }
+
+      ['2040', '2035', '2030'].forEach(year => {
+        if (appState.backcasting[year].narrative) {
+          document.getElementById(`backcasting-${year}-content`).innerHTML = formatGeneratedContent(appState.backcasting[year].narrative);
+          show(`backcasting-${year}`);
+          show(`vignette-section-${year}`);
+        }
+        if (appState.backcasting[year].vignette) {
+          document.getElementById(`vignette-${year}-content`).innerHTML = formatGeneratedContent(appState.backcasting[year].vignette);
+          show(`vignette-${year}`);
+        }
+      });
+
+      if (appState.intervention) {
+        document.getElementById('intervention-text').textContent = appState.intervention;
+        show('intervention-display');
+        hide('intervention-viewer');
+      }
+
+      if (appState.consequences) {
+        document.getElementById('delta-intervention').textContent = appState.intervention;
+        document.getElementById('consequences-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequences));
+        document.getElementById('altered-scenario-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.alteredScenario || ''));
+        document.getElementById('key-differences-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.keyDifferences || ''));
+        document.getElementById('original-scenario-display').textContent = appState.scenario2050;
+        show('delta-report');
+      }
+
+      // Update archetype display
+      if (appState.archetype) {
+        document.getElementById('archetype-name').textContent = appState.archetype;
+        document.getElementById('archetype-description').textContent =
+          archetypeDescriptions[appState.language][appState.archetype] || '';
+        show('archetype-reveal');
+        renderCardSelection();
+        show('card-selection-display');
+      }
     }
 
     async function syncStateToDatabase() {
@@ -1462,7 +1710,12 @@
 
     // ===== PHASE NAVIGATION =====
     function goToPhase(phase) {
-      appState.currentPhase = phase;
+      // For viewers, track their browsing phase separately
+      if (appState.role === 'viewer') {
+        viewerCurrentPhase = phase;
+      } else {
+        appState.currentPhase = phase;
+      }
 
       document.querySelectorAll('.phase-dot').forEach(dot => {
         const dotPhase = parseInt(dot.dataset.phase);
@@ -1484,6 +1737,22 @@
       prevBtn.classList.toggle('hidden-placeholder', phase <= 1);
       nextBtn.classList.toggle('hidden-placeholder', phase >= 7);
 
+      // Show/hide viewer-specific elements
+      if (appState.role === 'viewer') {
+        // Phase 5: show viewer intervention display
+        if (phase === 5 && !appState.intervention) {
+          show('intervention-viewer');
+          if (appState.interventionDraft) {
+            document.getElementById('intervention-viewer-display').value = appState.interventionDraft;
+          }
+        }
+        // Phase 7: show viewer displays
+        if (phase === 7) {
+          show('phase7-viewer');
+          updateViewerDisplays();
+        }
+      }
+
       if (appState.role === 'moderator') {
         syncStateToDatabase();
       }
@@ -1492,19 +1761,28 @@
     }
 
     function nextPhase() {
-      if (appState.currentPhase < 7) {
-        goToPhase(appState.currentPhase + 1);
+      const currentPhase = appState.role === 'viewer' ? viewerCurrentPhase : appState.currentPhase;
+      if (currentPhase < 7) {
+        goToPhase(currentPhase + 1);
       }
     }
 
     function prevPhase() {
-      if (appState.currentPhase > 1) {
-        goToPhase(appState.currentPhase - 1);
+      const currentPhase = appState.role === 'viewer' ? viewerCurrentPhase : appState.currentPhase;
+      if (currentPhase > 1) {
+        goToPhase(currentPhase - 1);
       }
     }
 
     function renderCurrentState() {
       setLanguage(appState.language);
+
+      // For viewers, initialize tracking variables
+      if (appState.role === 'viewer') {
+        moderatorPhase = appState.currentPhase;
+        viewerCurrentPhase = appState.currentPhase;
+      }
+
       goToPhase(appState.currentPhase);
 
       if (appState.cards.resources) {
@@ -1550,6 +1828,22 @@
         document.getElementById('key-differences-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.keyDifferences || ''));
         document.getElementById('original-scenario-display').textContent = appState.scenario2050;
         show('delta-report');
+      }
+
+      // Viewer-specific initializations
+      if (appState.role === 'viewer') {
+        // Show intervention viewer display if on phase 5 and intervention not submitted
+        if (appState.currentPhase === 5 && !appState.intervention) {
+          show('intervention-viewer');
+          if (appState.interventionDraft) {
+            document.getElementById('intervention-viewer-display').value = appState.interventionDraft;
+          }
+        }
+        // Show phase 7 viewer display
+        if (appState.currentPhase === 7) {
+          show('phase7-viewer');
+        }
+        updateViewerDisplays();
       }
     }
 
@@ -1846,11 +2140,6 @@
     }
 
     // ===== PHASE 5: INTERVENTION =====
-    const interventionInput = document.getElementById('intervention-input');
-    interventionInput?.addEventListener('input', function() {
-      document.getElementById('intervention-char-count').textContent = this.value.length;
-    });
-
     async function submitIntervention() {
       const input = document.getElementById('intervention-input');
       const text = input.value.trim();
@@ -2145,12 +2434,17 @@ Centre for Quantum & Society
           '2030': { narrative: null, vignette: null, actor: null, lens: null }
         },
         intervention: null,
+        interventionDraft: '',
         consequences: null,
         alteredScenario: null,
         keyDifferences: null,
         teamName: null,
         insights: { insight1: null, insight2: null, insight3: null }
       };
+
+      // Reset tracking variables
+      viewerCurrentPhase = 1;
+      moderatorPhase = 1;
 
       document.body.classList.remove('is-moderator');
       showScreen('screen-landing');
