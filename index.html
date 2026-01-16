@@ -210,18 +210,15 @@
       padding: 12px 16px;
       display: flex;
       justify-content: space-between;
-      gap: 12px;
       z-index: 100;
     }
 
     .phase-navigation button {
-      flex: 1;
-      max-width: 160px;
+      min-width: 100px;
     }
 
-    .phase-navigation .spacer {
-      flex: 1;
-      max-width: 160px;
+    .phase-navigation button.hidden-placeholder {
+      visibility: hidden;
     }
 
     /* Session code display */
@@ -1482,8 +1479,10 @@
       showScreen('screen-workshop');
 
       // Update navigation buttons
-      document.getElementById('btn-prev-phase').style.visibility = phase > 1 ? 'visible' : 'hidden';
-      document.getElementById('btn-next-phase').style.visibility = phase < 7 ? 'visible' : 'hidden';
+      const prevBtn = document.getElementById('btn-prev-phase');
+      const nextBtn = document.getElementById('btn-next-phase');
+      prevBtn.classList.toggle('hidden-placeholder', phase <= 1);
+      nextBtn.classList.toggle('hidden-placeholder', phase >= 7);
 
       if (appState.role === 'moderator') {
         syncStateToDatabase();
@@ -1546,9 +1545,9 @@
 
       if (appState.consequences) {
         document.getElementById('delta-intervention').textContent = appState.intervention;
-        document.getElementById('consequences-content').innerHTML = formatGeneratedContent(appState.consequences);
-        document.getElementById('altered-scenario-content').innerHTML = formatGeneratedContent(appState.alteredScenario);
-        document.getElementById('key-differences-content').innerHTML = formatGeneratedContent(appState.keyDifferences);
+        document.getElementById('consequences-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequences));
+        document.getElementById('altered-scenario-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.alteredScenario || ''));
+        document.getElementById('key-differences-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.keyDifferences || ''));
         document.getElementById('original-scenario-display').textContent = appState.scenario2050;
         show('delta-report');
       }
@@ -1911,13 +1910,22 @@
         const data = await response.json();
 
         if (data.success) {
-          // Parse the result to extract sections
-          const fullResult = data.result;
+          // Parse the result to extract sections based on prompt structure
+          const fullResult = stripMarkdown(data.result);
 
-          // Store full result and try to parse sections
-          appState.consequences = fullResult;
-          appState.alteredScenario = extractSection(fullResult, 'Altered', 'Key Differences') || fullResult;
-          appState.keyDifferences = extractSection(fullResult, 'Key Differences', null) || '';
+          // Extract sections: CONSEQUENCES (up to ALTERED), ALTERED 2050 SCENARIO (up to KEY DIFFERENCES), KEY DIFFERENCES
+          const consequencesSection = extractSection(fullResult, 'CONSEQUENCES', 'ALTERED 2050 SCENARIO') ||
+                                       extractSection(fullResult, 'Consequences', 'Altered') || '';
+          const alteredSection = extractSection(fullResult, 'ALTERED 2050 SCENARIO', 'KEY DIFFERENCES') ||
+                                  extractSection(fullResult, 'Altered 2050', 'Key Differences') || '';
+          const keyDifferencesSection = extractSection(fullResult, 'KEY DIFFERENCES', 'ORIGINAL SCENARIO') ||
+                                         extractSection(fullResult, 'Key Differences', 'Original') ||
+                                         extractSection(fullResult, 'KEY DIFFERENCES', null) || '';
+
+          // Store parsed sections
+          appState.consequences = consequencesSection || fullResult;
+          appState.alteredScenario = alteredSection;
+          appState.keyDifferences = keyDifferencesSection;
 
           document.getElementById('delta-intervention').textContent = appState.intervention;
           document.getElementById('consequences-content').innerHTML = formatGeneratedContent(appState.consequences);
@@ -1941,16 +1949,37 @@
       const startMatch = text.search(startRegex);
       if (startMatch === -1) return null;
 
+      // Find where the content starts (after the header line)
+      let contentStart = startMatch;
+      const headerEndMatch = text.slice(startMatch).search(/\n/);
+      if (headerEndMatch !== -1) {
+        contentStart = startMatch + headerEndMatch + 1;
+      }
+
       let endIndex = text.length;
       if (endMarker) {
         const endRegex = new RegExp(endMarker, 'i');
-        const endMatch = text.slice(startMatch + startMarker.length).search(endRegex);
+        const endMatch = text.slice(contentStart).search(endRegex);
         if (endMatch !== -1) {
-          endIndex = startMatch + startMarker.length + endMatch;
+          endIndex = contentStart + endMatch;
         }
       }
 
-      return text.slice(startMatch, endIndex).trim();
+      return text.slice(contentStart, endIndex).trim();
+    }
+
+    function stripMarkdown(text) {
+      if (!text) return '';
+      return text
+        // Remove bold/italic markers
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        .replace(/_([^_]+)_/g, '$1')
+        // Remove headers
+        .replace(/^#{1,6}\s+/gm, '')
+        // Clean up extra whitespace
+        .replace(/\n{3,}/g, '\n\n');
     }
 
     async function saveCompletedSession() {
