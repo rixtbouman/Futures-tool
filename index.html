@@ -883,7 +883,7 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvbmF0b3FpZHJwYWVobW5zdmZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1MjUwMzUsImV4cCI6MjA4NDEwMTAzNX0.K0uoZ-H3wp1bncYTXaLYFtW3tiaT8TUz9oCYEEnaOHc';
 
     // Initialize Supabase client
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ===== APP STATE =====
     let appState = {
@@ -1109,7 +1109,7 @@
       let attempts = 0;
 
       while (attempts < 10) {
-        const { data: existing } = await supabase
+        const { data: existing } = await supabaseClient
           .from('live_sessions')
           .select('group_code')
           .eq('group_code', code)
@@ -1123,7 +1123,7 @@
       appState.sessionCode = code;
 
       // Create session in database
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('live_sessions')
         .insert({
           group_code: code,
@@ -1152,7 +1152,7 @@
       }
 
       // Look up session
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('live_sessions')
         .select('*')
         .eq('group_code', code)
@@ -1186,7 +1186,7 @@
     }
 
     function subscribeToSession(code) {
-      realtimeChannel = supabase
+      realtimeChannel = supabaseClient
         .channel(`session-${code}`)
         .on('postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'live_sessions', filter: `group_code=eq.${code}` },
@@ -1208,7 +1208,7 @@
     async function syncStateToDatabase() {
       if (appState.role !== 'moderator' || !appState.sessionCode) return;
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('live_sessions')
         .update({ app_state: appState, updated_at: new Date().toISOString() })
         .eq('group_code', appState.sessionCode);
@@ -1388,7 +1388,7 @@
 
       try {
         // Fetch prompt from Supabase
-        const { data: promptData } = await supabase
+        const { data: promptData } = await supabaseClient
           .from('prompts')
           .select('prompt_text')
           .eq('name', 'scenario_writing')
@@ -1433,7 +1433,7 @@
 
       try {
         // Fetch prompt from Supabase
-        const { data: promptData } = await supabase
+        const { data: promptData } = await supabaseClient
           .from('prompts')
           .select('prompt_text')
           .eq('name', 'backcasting')
@@ -1538,7 +1538,7 @@
 
       try {
         // Fetch prompt from Supabase
-        const { data: promptData } = await supabase
+        const { data: promptData } = await supabaseClient
           .from('prompts')
           .select('prompt_text')
           .eq('name', 'vignette')
@@ -1613,7 +1613,7 @@
 
       try {
         // Fetch prompt from Supabase
-        const { data: promptData } = await supabase
+        const { data: promptData } = await supabaseClient
           .from('prompts')
           .select('prompt_text')
           .eq('name', 'consequence_generation')
@@ -1679,7 +1679,7 @@
     }
 
     async function saveCompletedSession() {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('sessions')
         .insert({
           group_code: appState.sessionCode,
