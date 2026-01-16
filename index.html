@@ -1983,14 +1983,42 @@
     }
 
     async function saveCompletedSession() {
-      await supabaseClient
-        .from('sessions')
-        .insert({
-          group_code: appState.sessionCode,
-          app_state: appState,
-          language: appState.language,
-          completed_at: new Date().toISOString()
-        });
+      try {
+        const { error } = await supabaseClient
+          .from('sessions')
+          .insert({
+            group_code: appState.sessionCode,
+            team_name: appState.teamName || null,
+            language: appState.language,
+            dimension_a: appState.cards.resources,
+            dimension_b: appState.cards.system,
+            dimension_c: appState.cards.value,
+            archetype: appState.archetype,
+            technology_1: appState.cards.tech1,
+            technology_2: appState.cards.tech2,
+            scenario: appState.scenario2050,
+            backcasting: appState.backcasting,
+            vignettes: {
+              '2040': appState.backcasting['2040']?.vignette || null,
+              '2035': appState.backcasting['2035']?.vignette || null,
+              '2030': appState.backcasting['2030']?.vignette || null
+            },
+            intervention: appState.intervention,
+            consequence_analysis: {
+              consequences: appState.consequences,
+              alteredScenario: appState.alteredScenario,
+              keyDifferences: appState.keyDifferences
+            },
+            full_state: appState,
+            completed_at: new Date().toISOString()
+          });
+
+        if (error) {
+          console.error('Error saving session:', error);
+        }
+      } catch (err) {
+        console.error('Error saving session:', err);
+      }
     }
 
     // ===== PHASE 7: WRAP UP =====
@@ -2082,7 +2110,22 @@ Centre for Quantum & Society
       URL.revokeObjectURL(url);
     }
 
-    function endSession() {
+    async function endSession() {
+      // Update session with final team name and insights
+      if (appState.sessionCode && appState.teamName) {
+        try {
+          await supabaseClient
+            .from('sessions')
+            .update({
+              team_name: appState.teamName,
+              full_state: appState,
+              updated_at: new Date().toISOString()
+            })
+            .eq('group_code', appState.sessionCode);
+        } catch (err) {
+          console.error('Error updating session:', err);
+        }
+      }
       showScreen('screen-end');
     }
 
