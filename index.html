@@ -124,6 +124,93 @@
       width: 100%;
     }
 
+    .view-original-btn {
+      margin-top: 24px;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      font-weight: 400;
+    }
+
+    .view-original-btn:hover {
+      background: rgba(0, 0, 255, 0.05);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow: hidden;
+      position: relative;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      color: var(--gray);
+      cursor: pointer;
+      padding: 4px 10px;
+      min-height: auto;
+      line-height: 1;
+      border-radius: 4px;
+    }
+
+    .modal-close:hover {
+      background: var(--light-gray);
+      color: var(--primary);
+    }
+
+    .modal-content h3 {
+      padding: 24px 24px 0;
+      margin: 0;
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 300;
+      color: var(--primary);
+    }
+
+    .modal-body {
+      padding: 16px 24px 24px;
+      overflow-y: auto;
+      max-height: calc(80vh - 80px);
+      line-height: 1.7;
+      color: var(--primary);
+    }
+
     /* Inputs */
     input, select, textarea {
       font-family: Arial, sans-serif;
@@ -1151,8 +1238,16 @@
           <h3 data-lang-key="consequenceAnalysis">Consequence Analysis</h3>
           <div class="generated-content" id="consequence-analysis-content"></div>
 
+          <button class="btn-secondary view-original-btn" onclick="openOriginalScenarioModal()" data-lang-key="viewOriginal2050">View Original 2050 Scenario</button>
+        </div>
+      </div>
+
+      <!-- Original Scenario Modal -->
+      <div id="original-scenario-modal" class="modal-overlay hidden" onclick="closeOriginalScenarioModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+          <button class="modal-close" onclick="closeOriginalScenarioModal()">&times;</button>
           <h3 data-lang-key="original2050">The Original 2050 Scenario</h3>
-          <div class="delta-original" id="original-scenario-display"></div>
+          <div class="modal-body" id="original-scenario-modal-content"></div>
         </div>
       </div>
 
@@ -1360,7 +1455,8 @@
         waitingForModerator: 'Wachten op moderator...',
         clickToUploadPerspective: 'Klik om een foto te maken van de actor & lens kaarten',
         consequenceAnalysis: 'Gevolgenanalyse',
-        original2050: 'Het Originele 2050 Scenario'
+        original2050: 'Het Originele 2050 Scenario',
+        viewOriginal2050: 'Bekijk Origineel 2050 Scenario'
       },
       en: {
         start: 'Start',
@@ -1432,7 +1528,8 @@
         waitingForModerator: 'Waiting for moderator...',
         clickToUploadPerspective: 'Click to take a photo of actor & lens cards',
         consequenceAnalysis: 'Consequence Analysis',
-        original2050: 'The Original 2050 Scenario'
+        original2050: 'The Original 2050 Scenario',
+        viewOriginal2050: 'View Original 2050 Scenario'
       }
     };
 
@@ -1443,6 +1540,18 @@
 
     function hide(id) {
       document.getElementById(id)?.classList.add('hidden');
+    }
+
+    function openOriginalScenarioModal() {
+      document.getElementById('original-scenario-modal-content').innerHTML = renderMarkdown(appState.scenario2050 || '');
+      document.getElementById('original-scenario-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeOriginalScenarioModal(event) {
+      if (event && event.target !== event.currentTarget) return;
+      document.getElementById('original-scenario-modal').classList.add('hidden');
+      document.body.style.overflow = '';
     }
 
     function showScreen(screenId) {
@@ -1737,7 +1846,6 @@
       if (appState.consequenceAnalysis) {
         document.getElementById('delta-intervention').textContent = appState.intervention;
         document.getElementById('consequence-analysis-content').innerHTML = renderMarkdown(appState.consequenceAnalysis || '');
-        document.getElementById('original-scenario-display').textContent = appState.scenario2050;
         show('delta-report');
       }
 
@@ -1877,7 +1985,6 @@
       if (appState.consequenceAnalysis) {
         document.getElementById('delta-intervention').textContent = appState.intervention;
         document.getElementById('consequence-analysis-content').innerHTML = renderMarkdown(appState.consequenceAnalysis || '');
-        document.getElementById('original-scenario-display').textContent = appState.scenario2050;
         show('delta-report');
       }
 
@@ -2371,7 +2478,6 @@
 
           document.getElementById('delta-intervention').textContent = appState.intervention;
           document.getElementById('consequence-analysis-content').innerHTML = renderMarkdown(appState.consequenceAnalysis);
-          document.getElementById('original-scenario-display').textContent = appState.scenario2050;
 
           show('delta-report');
           syncStateToDatabase();
