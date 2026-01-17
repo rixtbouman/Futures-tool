@@ -289,14 +289,7 @@ Parameters:
 - Language: ${language === 'nl' ? 'Dutch' : 'English'}
 ${previousContext}
 
-Use the sector knowledge provided to ground the narrative in the Dutch migration context.
-
-Provide:
-1. Narrative (5-8 sentences)
-2. Key Developments (5-7 bullets with causal explanations)
-3. Causal Chain (1-2 sentences)
-4. Opportunities (3 bullets)
-5. Risks (2 bullets)`;
+Use the sector knowledge provided to ground the narrative in the Dutch migration context.`;
 
   const contents = [{ parts: [{ text: userPrompt }] }];
   return await callGemini(apiKey, contents, systemInstruction);
@@ -351,13 +344,7 @@ Parameters:
 - Technologies: ${tech1}, ${tech2}
 - Language: ${language === 'nl' ? 'Dutch' : 'English'}
 
-Use the sector knowledge provided to ground the analysis in the Dutch migration context.
-
-Provide:
-1. 2nd Order Effects (2 bullets)
-2. 3rd Order Effects (2 bullets)
-3. ELSA Implications (Ethical, Legal, Social, Accountability)
-4. The Altered 2050 (2-3 paragraphs rewriting the original scenario)`;
+Use the sector knowledge provided to ground the analysis in the Dutch migration context.`;
 
   const contents = [{ parts: [{ text: userPrompt }] }];
   return await callGemini(apiKey, contents, systemInstruction);

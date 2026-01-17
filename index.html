@@ -1123,20 +1123,8 @@
             <p id="delta-intervention"></p>
           </div>
 
-          <h3 data-lang-key="consequenceOfIntervention">Consequence of the Intervention</h3>
-          <div class="generated-content" id="consequence-content"></div>
-
-          <h3 data-lang-key="secondOrderEffects">2nd Order Effects</h3>
-          <div class="generated-content" id="second-order-content"></div>
-
-          <h3 data-lang-key="thirdOrderEffects">3rd Order Effects</h3>
-          <div class="generated-content" id="third-order-content"></div>
-
-          <h3 data-lang-key="elsaImplications">ELSA Implications</h3>
-          <div class="generated-content" id="elsa-content"></div>
-
-          <h3 data-lang-key="altered2050">The Altered 2050 Scenario</h3>
-          <div class="generated-content" id="altered-scenario-content"></div>
+          <h3 data-lang-key="consequenceAnalysis">Consequence Analysis</h3>
+          <div class="generated-content" id="consequence-analysis-content"></div>
 
           <h3 data-lang-key="original2050">The Original 2050 Scenario</h3>
           <div class="delta-original" id="original-scenario-display"></div>
@@ -1263,11 +1251,7 @@
       },
       intervention: null,
       interventionDraft: '',
-      consequenceOfIntervention: null,
-      secondOrderEffects: null,
-      thirdOrderEffects: null,
-      elsaImplications: null,
-      alteredScenario: null,
+      consequenceAnalysis: null,
       teamName: null,
       insights: { insight1: null, insight2: null, insight3: null },
       sectorKnowledge: null
@@ -1350,11 +1334,7 @@
         moderatorMovedTo: 'De moderator is naar Fase {phase} gegaan',
         waitingForModerator: 'Wachten op moderator...',
         clickToUploadPerspective: 'Klik om een foto te maken van de actor & lens kaarten',
-        consequenceOfIntervention: 'Gevolg van de Interventie',
-        secondOrderEffects: '2e Orde Effecten',
-        thirdOrderEffects: '3e Orde Effecten',
-        elsaImplications: 'ELSA Implicaties',
-        altered2050: 'Het Gewijzigde 2050 Scenario',
+        consequenceAnalysis: 'Gevolgenanalyse',
         original2050: 'Het Originele 2050 Scenario'
       },
       en: {
@@ -1426,11 +1406,7 @@
         moderatorMovedTo: 'Moderator moved to Phase {phase}',
         waitingForModerator: 'Waiting for moderator...',
         clickToUploadPerspective: 'Click to take a photo of actor & lens cards',
-        consequenceOfIntervention: 'Consequence of the Intervention',
-        secondOrderEffects: '2nd Order Effects',
-        thirdOrderEffects: '3rd Order Effects',
-        elsaImplications: 'ELSA Implications',
-        altered2050: 'The Altered 2050 Scenario',
+        consequenceAnalysis: 'Consequence Analysis',
         original2050: 'The Original 2050 Scenario'
       }
     };
@@ -1741,13 +1717,9 @@
         hide('intervention-viewer');
       }
 
-      if (appState.consequenceOfIntervention || appState.alteredScenario) {
+      if (appState.consequenceAnalysis) {
         document.getElementById('delta-intervention').textContent = appState.intervention;
-        document.getElementById('consequence-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequenceOfIntervention || ''));
-        document.getElementById('second-order-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.secondOrderEffects || ''));
-        document.getElementById('third-order-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.thirdOrderEffects || ''));
-        document.getElementById('elsa-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.elsaImplications || ''));
-        document.getElementById('altered-scenario-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.alteredScenario || ''));
+        document.getElementById('consequence-analysis-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequenceAnalysis || ''));
         document.getElementById('original-scenario-display').textContent = appState.scenario2050;
         show('delta-report');
       }
@@ -1885,13 +1857,9 @@
         show('intervention-display');
       }
 
-      if (appState.consequenceOfIntervention || appState.alteredScenario) {
+      if (appState.consequenceAnalysis) {
         document.getElementById('delta-intervention').textContent = appState.intervention;
-        document.getElementById('consequence-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequenceOfIntervention || ''));
-        document.getElementById('second-order-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.secondOrderEffects || ''));
-        document.getElementById('third-order-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.thirdOrderEffects || ''));
-        document.getElementById('elsa-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.elsaImplications || ''));
-        document.getElementById('altered-scenario-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.alteredScenario || ''));
+        document.getElementById('consequence-analysis-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequenceAnalysis || ''));
         document.getElementById('original-scenario-display').textContent = appState.scenario2050;
         show('delta-report');
       }
@@ -2381,34 +2349,11 @@
         const data = await response.json();
 
         if (data.success) {
-          // Parse the result to extract sections based on prompt structure
-          const fullResult = stripMarkdown(data.result);
-
-          // Extract sections based on prompt output structure
-          const consequenceSection = extractSection(fullResult, 'CONSEQUENCE OF THE INTERVENTION', '2ND ORDER EFFECTS') ||
-                                      extractSection(fullResult, 'Consequence of the Intervention', '2nd Order') || '';
-          const secondOrderSection = extractSection(fullResult, '2ND ORDER EFFECTS', '3RD ORDER EFFECTS') ||
-                                      extractSection(fullResult, '2nd Order Effects', '3rd Order') || '';
-          const thirdOrderSection = extractSection(fullResult, '3RD ORDER EFFECTS', 'ELSA IMPLICATIONS') ||
-                                     extractSection(fullResult, '3rd Order Effects', 'ELSA') || '';
-          const elsaSection = extractSection(fullResult, 'ELSA IMPLICATIONS', 'THE ALTERED 2050 SCENARIO') ||
-                               extractSection(fullResult, 'ELSA Implications', 'Altered') || '';
-          const alteredSection = extractSection(fullResult, 'THE ALTERED 2050 SCENARIO', null) ||
-                                  extractSection(fullResult, 'Altered 2050 Scenario', null) || '';
-
-          // Store parsed sections
-          appState.consequenceOfIntervention = consequenceSection || fullResult;
-          appState.secondOrderEffects = secondOrderSection;
-          appState.thirdOrderEffects = thirdOrderSection;
-          appState.elsaImplications = elsaSection;
-          appState.alteredScenario = alteredSection;
+          // Store full result directly (no section parsing - let markdown rendering handle structure)
+          appState.consequenceAnalysis = data.result;
 
           document.getElementById('delta-intervention').textContent = appState.intervention;
-          document.getElementById('consequence-content').innerHTML = formatGeneratedContent(appState.consequenceOfIntervention);
-          document.getElementById('second-order-content').innerHTML = formatGeneratedContent(appState.secondOrderEffects);
-          document.getElementById('third-order-content').innerHTML = formatGeneratedContent(appState.thirdOrderEffects);
-          document.getElementById('elsa-content').innerHTML = formatGeneratedContent(appState.elsaImplications);
-          document.getElementById('altered-scenario-content').innerHTML = formatGeneratedContent(appState.alteredScenario);
+          document.getElementById('consequence-analysis-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequenceAnalysis));
           document.getElementById('original-scenario-display').textContent = appState.scenario2050;
 
           show('delta-report');
@@ -2420,30 +2365,6 @@
       }
 
       hide('loading-consequences');
-    }
-
-    function extractSection(text, startMarker, endMarker) {
-      const startRegex = new RegExp(startMarker, 'i');
-      const startMatch = text.search(startRegex);
-      if (startMatch === -1) return null;
-
-      // Find where the content starts (after the header line)
-      let contentStart = startMatch;
-      const headerEndMatch = text.slice(startMatch).search(/\n/);
-      if (headerEndMatch !== -1) {
-        contentStart = startMatch + headerEndMatch + 1;
-      }
-
-      let endIndex = text.length;
-      if (endMarker) {
-        const endRegex = new RegExp(endMarker, 'i');
-        const endMatch = text.slice(contentStart).search(endRegex);
-        if (endMatch !== -1) {
-          endIndex = contentStart + endMatch;
-        }
-      }
-
-      return text.slice(contentStart, endIndex).trim();
     }
 
     function stripMarkdown(text) {
@@ -2482,13 +2403,7 @@
               '2030': appState.backcasting['2030']?.vignette || null
             },
             intervention: appState.intervention,
-            consequence_analysis: {
-              consequenceOfIntervention: appState.consequenceOfIntervention,
-              secondOrderEffects: appState.secondOrderEffects,
-              thirdOrderEffects: appState.thirdOrderEffects,
-              elsaImplications: appState.elsaImplications,
-              alteredScenario: appState.alteredScenario
-            },
+            consequence_analysis: appState.consequenceAnalysis,
             full_state: appState,
             completed_at: new Date().toISOString()
           });
@@ -2626,11 +2541,7 @@ Centre for Quantum & Society
         },
         intervention: null,
         interventionDraft: '',
-        consequenceOfIntervention: null,
-        secondOrderEffects: null,
-        thirdOrderEffects: null,
-        elsaImplications: null,
-        alteredScenario: null,
+        consequenceAnalysis: null,
         teamName: null,
         insights: { insight1: null, insight2: null, insight3: null },
         sectorKnowledge: null
