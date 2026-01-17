@@ -1604,6 +1604,75 @@
       return marked.parse(text);
     }
 
+    // Streaming API helper with viewer sync (uses Edge function for true SSE)
+    let streamSyncTimeout = null;
+    async function streamGeneration(type, payload, contentElementId, onComplete, onChunk) {
+      const contentEl = document.getElementById(contentElementId);
+      let fullText = '';
+
+      // Helper to sync during streaming (debounced to avoid flooding DB)
+      const syncDuringStream = (text) => {
+        if (onChunk) onChunk(text);
+        if (streamSyncTimeout) clearTimeout(streamSyncTimeout);
+        streamSyncTimeout = setTimeout(() => {
+          if (appState.role === 'moderator') {
+            syncStateToDatabase();
+          }
+        }, 300);
+      };
+
+      try {
+        const response = await fetch('/api/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, payload })
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const jsonStr = line.slice(6);
+              try {
+                const data = JSON.parse(jsonStr);
+
+                if (data.chunk) {
+                  fullText += data.chunk;
+                  contentEl.innerHTML = renderMarkdown(fullText);
+                  syncDuringStream(fullText);
+                }
+
+                if (data.done) {
+                  if (onComplete) onComplete(fullText);
+                }
+
+                if (data.error) {
+                  console.error('Stream error:', data.error);
+                }
+              } catch (e) {
+                // Skip malformed JSON
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Streaming error:', error);
+        throw error;
+      }
+
+      return fullText;
+    }
+
     // Debounce function for input syncing
     function debounce(key, fn, delay = 500) {
       if (debounceTimers[key]) {
@@ -2259,7 +2328,9 @@
     // ===== GENERATION FUNCTIONS =====
     async function generateScenario() {
       hide('btn-generate-scenario');
-      show('loading-scenario');
+      hide('loading-scenario');
+      show('scenario-2050');
+      document.getElementById('scenario-content').innerHTML = '<span class="streaming-cursor">Generating...</span>';
 
       try {
         const { data: promptData } = await supabaseClient
@@ -2268,37 +2339,29 @@
           .eq('name', 'Scenario Writing Guide')
           .single();
 
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'scenario',
-            payload: {
-              archetype: appState.archetype,
-              resources: appState.cards.resources,
-              system: appState.cards.system,
-              value: appState.cards.value,
-              tech1: appState.cards.tech1,
-              tech2: appState.cards.tech2,
-              language: appState.language,
-              prompt: promptData?.prompt_text,
-              sectorKnowledge: appState.sectorKnowledge,
-              technologyData: appState.technologyData
-            }
-          })
-        });
+        const payload = {
+          archetype: appState.archetype,
+          resources: appState.cards.resources,
+          system: appState.cards.system,
+          value: appState.cards.value,
+          tech1: appState.cards.tech1,
+          tech2: appState.cards.tech2,
+          language: appState.language,
+          prompt: promptData?.prompt_text,
+          sectorKnowledge: appState.sectorKnowledge,
+          technologyData: appState.technologyData
+        };
 
-        const data = await response.json();
-
-        if (data.success) {
-          appState.scenario2050 = data.result;
-          document.getElementById('scenario-content').innerHTML = renderMarkdown(data.result);
-          show('scenario-2050');
+        await streamGeneration('scenario', payload, 'scenario-content', (fullText) => {
+          appState.scenario2050 = fullText;
           syncStateToDatabase();
-        }
+        }, (partialText) => {
+          appState.scenario2050 = partialText;
+        });
       } catch (error) {
         console.error('Scenario generation error:', error);
         show('btn-generate-scenario');
+        hide('scenario-2050');
       }
 
       hide('loading-scenario');
@@ -2306,7 +2369,9 @@
 
     async function generateBackcasting(year) {
       hide(`btn-generate-${year}`);
-      show(`loading-${year}`);
+      hide(`loading-${year}`);
+      show(`backcasting-${year}`);
+      document.getElementById(`backcasting-${year}-content`).innerHTML = '<span class="streaming-cursor">Generating...</span>';
 
       try {
         // Fetch year-specific prompt
@@ -2341,42 +2406,32 @@
           }
         }
 
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'backcasting',
-            payload: {
-              year,
-              scenario2050: appState.scenario2050,
-              archetype: appState.archetype,
-              value: appState.cards.value,
-              tech1: appState.cards.tech1,
-              tech2: appState.cards.tech2,
-              previousPhases,
-              language: appState.language,
-              prompt,
-              sectorKnowledge: appState.sectorKnowledge,
-              technologyData: appState.technologyData
-            }
-          })
-        });
+        const payload = {
+          year,
+          scenario2050: appState.scenario2050,
+          archetype: appState.archetype,
+          value: appState.cards.value,
+          tech1: appState.cards.tech1,
+          tech2: appState.cards.tech2,
+          previousPhases,
+          language: appState.language,
+          prompt,
+          sectorKnowledge: appState.sectorKnowledge,
+          technologyData: appState.technologyData
+        };
 
-        const data = await response.json();
-
-        if (data.success) {
-          appState.backcasting[year].narrative = data.result;
-          document.getElementById(`backcasting-${year}-content`).innerHTML = renderMarkdown(data.result);
-          show(`backcasting-${year}`);
+        await streamGeneration('backcasting', payload, `backcasting-${year}-content`, (fullText) => {
+          appState.backcasting[year].narrative = fullText;
           show(`vignette-section-${year}`);
           syncStateToDatabase();
-        }
+        }, (partialText) => {
+          appState.backcasting[year].narrative = partialText;
+        });
       } catch (error) {
         console.error('Backcasting generation error:', error);
         show(`btn-generate-${year}`);
+        hide(`backcasting-${year}`);
       }
-
-      hide(`loading-${year}`);
     }
 
     async function generateVignette(year) {
@@ -2398,7 +2453,9 @@
         return;
       }
 
-      show(`loading-vignette-${year}`);
+      hide(`loading-vignette-${year}`);
+      show(`vignette-${year}`);
+      document.getElementById(`vignette-${year}-content`).innerHTML = '<span class="streaming-cursor">Generating...</span>';
 
       try {
         const { data: promptData } = await supabaseClient
@@ -2418,41 +2475,32 @@
           prompt = oldPrompt?.prompt_text;
         }
 
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'vignette',
-            payload: {
-              year,
-              actor,
-              lens,
-              archetype: appState.archetype,
-              value: appState.cards.value,
-              tech1: appState.cards.tech1,
-              tech2: appState.cards.tech2,
-              backcastingNarrative: appState.backcasting[year].narrative,
-              language: appState.language,
-              prompt
-            }
-          })
-        });
+        const payload = {
+          year,
+          actor,
+          lens,
+          archetype: appState.archetype,
+          value: appState.cards.value,
+          tech1: appState.cards.tech1,
+          tech2: appState.cards.tech2,
+          backcastingNarrative: appState.backcasting[year].narrative,
+          language: appState.language,
+          prompt
+        };
 
-        const data = await response.json();
+        appState.backcasting[year].actor = actor;
+        appState.backcasting[year].lens = lens;
 
-        if (data.success) {
-          appState.backcasting[year].vignette = data.result;
-          appState.backcasting[year].actor = actor;
-          appState.backcasting[year].lens = lens;
-          document.getElementById(`vignette-${year}-content`).innerHTML = renderMarkdown(data.result);
-          show(`vignette-${year}`);
+        await streamGeneration('vignette', payload, `vignette-${year}-content`, (fullText) => {
+          appState.backcasting[year].vignette = fullText;
           syncStateToDatabase();
-        }
+        }, (partialText) => {
+          appState.backcasting[year].vignette = partialText;
+        });
       } catch (error) {
         console.error('Vignette generation error:', error);
+        hide(`vignette-${year}`);
       }
-
-      hide(`loading-vignette-${year}`);
     }
 
     // ===== PHASE 5: INTERVENTION =====
@@ -2493,45 +2541,40 @@
 2030: ${appState.backcasting['2030'].narrative || 'Not generated'}
         `.trim();
 
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'consequence',
-            payload: {
-              intervention: appState.intervention,
-              scenario2050: appState.scenario2050,
-              archetype: appState.archetype,
-              value: appState.cards.value,
-              tech1: appState.cards.tech1,
-              tech2: appState.cards.tech2,
-              backcastingJourney,
-              language: appState.language,
-              prompt: promptData?.prompt_text,
-              sectorKnowledge: appState.sectorKnowledge,
-              technologyData: appState.technologyData
-            }
-          })
-        });
+        // Show the delta report container immediately for streaming
+        document.getElementById('delta-intervention').textContent = appState.intervention;
+        show('delta-report');
+        hide('loading-consequences');
 
-        const data = await response.json();
+        const payload = {
+          intervention: appState.intervention,
+          scenario2050: appState.scenario2050,
+          archetype: appState.archetype,
+          value: appState.cards.value,
+          tech1: appState.cards.tech1,
+          tech2: appState.cards.tech2,
+          backcastingJourney,
+          language: appState.language,
+          prompt: promptData?.prompt_text,
+          sectorKnowledge: appState.sectorKnowledge,
+          technologyData: appState.technologyData
+        };
 
-        if (data.success) {
-          // Store full result directly (no section parsing - let markdown rendering handle structure)
-          appState.consequenceAnalysis = data.result;
-
-          document.getElementById('delta-intervention').textContent = appState.intervention;
-          document.getElementById('consequence-analysis-content').innerHTML = renderMarkdown(appState.consequenceAnalysis);
-
-          show('delta-report');
+        const result = await streamGeneration('consequence', payload, 'consequence-analysis-content', async (fullText) => {
+          appState.consequenceAnalysis = fullText;
           syncStateToDatabase();
           await saveCompletedSession();
+        }, (partialText) => {
+          appState.consequenceAnalysis = partialText;
+        });
+
+        if (!result) {
+          throw new Error('No content generated');
         }
       } catch (error) {
         console.error('Consequence generation error:', error);
+        hide('loading-consequences');
       }
-
-      hide('loading-consequences');
     }
 
     async function saveCompletedSession() {

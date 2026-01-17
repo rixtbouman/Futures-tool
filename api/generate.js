@@ -21,36 +21,70 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { type, payload } = req.body;
+    const { type, payload, stream } = req.body;
 
-    let result;
-    switch (type) {
-      case 'recognize':
-        result = await recognizeCards(apiKey, payload);
-        break;
-      case 'recognizePerspective':
-        result = await recognizePerspectiveCards(apiKey, payload);
-        break;
-      case 'scenario':
-        result = await generateScenario(apiKey, payload);
-        break;
-      case 'backcasting':
-        result = await generateBackcasting(apiKey, payload);
-        break;
-      case 'vignette':
-        result = await generateVignette(apiKey, payload);
-        break;
-      case 'consequence':
-        result = await generateConsequence(apiKey, payload);
-        break;
-      default:
-        return res.status(400).json({ error: 'Unknown generation type' });
+    // Non-streaming requests (card recognition)
+    if (!stream) {
+      let result;
+      switch (type) {
+        case 'recognize':
+          result = await recognizeCards(apiKey, payload);
+          break;
+        case 'recognizePerspective':
+          result = await recognizePerspectiveCards(apiKey, payload);
+          break;
+        case 'scenario':
+          result = await generateScenario(apiKey, payload);
+          break;
+        case 'backcasting':
+          result = await generateBackcasting(apiKey, payload);
+          break;
+        case 'vignette':
+          result = await generateVignette(apiKey, payload);
+          break;
+        case 'consequence':
+          result = await generateConsequence(apiKey, payload);
+          break;
+        default:
+          return res.status(400).json({ error: 'Unknown generation type' });
+      }
+      return res.status(200).json({ success: true, result });
     }
 
-    return res.status(200).json({ success: true, result });
+    // Streaming requests
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    let streamParams;
+    switch (type) {
+      case 'scenario':
+        streamParams = getScenarioParams(payload);
+        break;
+      case 'backcasting':
+        streamParams = getBackcastingParams(payload);
+        break;
+      case 'vignette':
+        streamParams = getVignetteParams(payload);
+        break;
+      case 'consequence':
+        streamParams = getConsequenceParams(payload);
+        break;
+      default:
+        res.write(`data: ${JSON.stringify({ error: 'Streaming not supported for this type' })}\n\n`);
+        return res.end();
+    }
+
+    await streamGeminiResponse(apiKey, streamParams.contents, streamParams.systemInstruction, res);
+
   } catch (error) {
     console.error('Generation error:', error);
-    return res.status(500).json({ error: error.message });
+    if (res.headersSent) {
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.end();
+    } else {
+      return res.status(500).json({ error: error.message });
+    }
   }
 }
 
@@ -144,6 +178,66 @@ async function callGemini(apiKey, contents, systemInstruction = null) {
 
   const data = await response.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+// Stream Gemini API response via SSE
+async function streamGeminiResponse(apiKey, contents, systemInstruction, res) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+
+  const body = { contents };
+  if (systemInstruction) {
+    body.systemInstruction = { parts: [{ text: systemInstruction }] };
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    res.write(`data: ${JSON.stringify({ error: `Gemini API error: ${error}` })}\n\n`);
+    res.end();
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.slice(6);
+          if (jsonStr.trim() === '[DONE]') continue;
+
+          try {
+            const data = JSON.parse(jsonStr);
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              res.write(`data: ${JSON.stringify({ chunk: text })}\n\n`);
+            }
+          } catch (e) {
+            // Skip malformed JSON
+          }
+        }
+      }
+    }
+  } catch (error) {
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+  }
+
+  res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+  res.end();
 }
 
 // Phase 1: Recognize cards from photo
@@ -381,4 +475,114 @@ OUTPUT FORMAT (use these exact headers):
 
   const contents = [{ parts: [{ text: userPrompt }] }];
   return await callGemini(apiKey, contents, systemInstruction);
+}
+
+// ===== STREAMING PARAMETER HELPERS =====
+
+function getScenarioParams(payload) {
+  const { archetype, resources, system, value, tech1, tech2, language, prompt, sectorKnowledge, technologyData } = payload;
+
+  const basePrompt = prompt || `You are a speculative futures writer creating a vivid scenario for the year 2050, focused on the Dutch migration sector.`;
+  const sectorKnowledgeText = formatSectorKnowledge(sectorKnowledge);
+  const technologyKnowledgeText = formatTechnologyData(technologyData);
+  const systemInstruction = basePrompt + sectorKnowledgeText + technologyKnowledgeText;
+
+  const userPrompt = `Generate a 2050 scenario with these parameters:
+- Archetype: ${archetype}
+- Resources dimension: ${resources}
+- System dimension: ${system}
+- Value dimension: ${value}
+- Technologies: ${tech1}, ${tech2}
+- Language: ${language === 'nl' ? 'Dutch' : 'English'}
+
+Use the sector and technology knowledge provided to ground the scenario.`;
+
+  return { contents: [{ parts: [{ text: userPrompt }] }], systemInstruction };
+}
+
+function getBackcastingParams(payload) {
+  const { year, scenario2050, archetype, value, tech1, tech2, previousPhases, language, prompt, sectorKnowledge, technologyData } = payload;
+
+  const speculationLevel = year === '2040' ? 'high' : year === '2035' ? 'medium' : 'low';
+
+  const basePrompt = prompt || `You are helping workshop participants understand how we might arrive at a 2050 future by looking backward through time.`;
+  const sectorKnowledgeText = formatSectorKnowledge(sectorKnowledge);
+  const technologyKnowledgeText = formatTechnologyData(technologyData);
+  const systemInstruction = basePrompt + sectorKnowledgeText + technologyKnowledgeText;
+
+  const previousContext = previousPhases ? `\n\nPrevious backcasting phases:\n${previousPhases}` : '';
+
+  const userPrompt = `Describe the world in ${year}, explaining what developments led toward this 2050 scenario:
+
+${scenario2050}
+
+Parameters:
+- Archetype: ${archetype}
+- Value dimension: ${value}
+- Technologies: ${tech1}, ${tech2}
+- Speculation level: ${speculationLevel}
+- Language: ${language === 'nl' ? 'Dutch' : 'English'}
+${previousContext}
+
+Use the sector and technology knowledge provided to ground the narrative.`;
+
+  return { contents: [{ parts: [{ text: userPrompt }] }], systemInstruction };
+}
+
+function getVignetteParams(payload) {
+  const { year, actor, lens, archetype, value, tech1, tech2, backcastingNarrative, language, prompt } = payload;
+
+  const systemInstruction = prompt || `You are writing a short narrative vignette—a concrete scene that shows how a major force shapes an actor's reality.`;
+
+  const userPrompt = `Write a vignette for:
+- Year: ${year}
+- Actor: ${actor}
+- Lens: ${lens}
+- Archetype: ${archetype}
+- Value dimension: ${value}
+- Technologies: ${tech1}, ${tech2}
+- Language: ${language === 'nl' ? 'Dutch' : 'English'}
+
+Context from this era:
+${backcastingNarrative}
+
+Write 4-6 sentences. A snapshot scene, not analysis. Match the tone to the archetype.`;
+
+  return { contents: [{ parts: [{ text: userPrompt }] }], systemInstruction };
+}
+
+function getConsequenceParams(payload) {
+  const { intervention, scenario2050, archetype, value, tech1, tech2, backcastingJourney, language, prompt, sectorKnowledge, technologyData } = payload;
+
+  const basePrompt = prompt || `You are analyzing how a strategic intervention made TODAY (2026) would ripple forward and alter the 2050 scenario.`;
+  const sectorKnowledgeText = formatSectorKnowledge(sectorKnowledge);
+  const technologyKnowledgeText = formatTechnologyData(technologyData);
+  const systemInstruction = basePrompt + sectorKnowledgeText + technologyKnowledgeText;
+
+  const userPrompt = `Analyze this intervention and rewrite the future:
+
+INTERVENTION: ${intervention}
+
+ORIGINAL 2050 SCENARIO:
+${scenario2050}
+
+BACKCASTING JOURNEY:
+${backcastingJourney}
+
+Parameters:
+- Archetype: ${archetype}
+- Value dimension: ${value}
+- Technologies: ${tech1}, ${tech2}
+- Language: ${language === 'nl' ? 'Dutch' : 'English'}
+
+Use the sector and technology knowledge provided to ground the analysis.
+
+OUTPUT FORMAT (use these exact headers):
+## CONSEQUENCE OF THE INTERVENTION
+## 2ND ORDER EFFECTS
+## 3RD ORDER EFFECTS
+## ELSA IMPLICATIONS
+## THE ALTERED 2050 SCENARIO`;
+
+  return { contents: [{ parts: [{ text: userPrompt }] }], systemInstruction };
 }
