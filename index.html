@@ -1222,7 +1222,8 @@
       alteredScenario: null,
       keyDifferences: null,
       teamName: null,
-      insights: { insight1: null, insight2: null, insight3: null }
+      insights: { insight1: null, insight2: null, insight3: null },
+      sectorKnowledge: null
     };
 
     let realtimeChannel = null;
@@ -1897,7 +1898,26 @@
       `;
     }
 
-    function confirmCardSelection() {
+    async function fetchSectorKnowledge() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('sector_knowledge')
+          .select('*')
+          .single();
+
+        if (error) {
+          console.error('Error fetching sector knowledge:', error);
+          return null;
+        }
+
+        return data;
+      } catch (err) {
+        console.error('Error fetching sector knowledge:', err);
+        return null;
+      }
+    }
+
+    async function confirmCardSelection() {
       const resources = document.getElementById('select-resources').value;
       const system = document.getElementById('select-system').value;
       const value = document.getElementById('select-value').value;
@@ -1911,6 +1931,11 @@
 
       appState.cards = { resources, system, value, tech1, tech2 };
       appState.archetype = determineArchetype(resources, system);
+
+      // Fetch sector knowledge for use in all generations
+      if (!appState.sectorKnowledge) {
+        appState.sectorKnowledge = await fetchSectorKnowledge();
+      }
 
       hide('manual-card-selection');
       renderCardSelection();
@@ -1965,11 +1990,14 @@
             type: 'scenario',
             payload: {
               archetype: appState.archetype,
+              resources: appState.cards.resources,
+              system: appState.cards.system,
               value: appState.cards.value,
               tech1: appState.cards.tech1,
               tech2: appState.cards.tech2,
               language: appState.language,
-              prompt: promptData?.prompt_text
+              prompt: promptData?.prompt_text,
+              sectorKnowledge: appState.sectorKnowledge
             }
           })
         });
@@ -2041,7 +2069,8 @@
               tech2: appState.cards.tech2,
               previousPhases,
               language: appState.language,
-              prompt
+              prompt,
+              sectorKnowledge: appState.sectorKnowledge
             }
           })
         });
@@ -2191,7 +2220,8 @@
               tech2: appState.cards.tech2,
               backcastingJourney,
               language: appState.language,
-              prompt: promptData?.prompt_text
+              prompt: promptData?.prompt_text,
+              sectorKnowledge: appState.sectorKnowledge
             }
           })
         });
@@ -2439,7 +2469,8 @@ Centre for Quantum & Society
         alteredScenario: null,
         keyDifferences: null,
         teamName: null,
-        insights: { insight1: null, insight2: null, insight3: null }
+        insights: { insight1: null, insight2: null, insight3: null },
+        sectorKnowledge: null
       };
 
       // Reset tracking variables
