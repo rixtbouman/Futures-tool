@@ -344,7 +344,14 @@ Parameters:
 - Technologies: ${tech1}, ${tech2}
 - Language: ${language === 'nl' ? 'Dutch' : 'English'}
 
-Use the sector knowledge provided to ground the analysis in the Dutch migration context.`;
+Use the sector knowledge provided to ground the analysis in the Dutch migration context.
+
+OUTPUT FORMAT (use these exact headers):
+## CONSEQUENCE OF THE INTERVENTION
+## 2ND ORDER EFFECTS
+## 3RD ORDER EFFECTS
+## ELSA IMPLICATIONS
+## THE ALTERED 2050 SCENARIO`;
 
   const contents = [{ parts: [{ text: userPrompt }] }];
   return await callGemini(apiKey, contents, systemInstruction);
