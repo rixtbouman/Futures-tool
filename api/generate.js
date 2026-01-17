@@ -99,6 +99,29 @@ function formatSectorKnowledge(sectorKnowledge) {
   return `\n\n---\n\n## SECTOR KNOWLEDGE: ${sectorKnowledge.sector_name || 'DUTCH MIGRATION'}\n\n${sections.join('\n\n')}\n\n---\n`;
 }
 
+// Format technology data for injection into prompts
+function formatTechnologyData(technologyData) {
+  if (!technologyData || !Array.isArray(technologyData) || technologyData.length === 0) return '';
+
+  const techSections = technologyData.map(tech => {
+    const parts = [`### ${tech.tech_name}`];
+
+    if (tech.general_info) {
+      parts.push(`**General Information:**\n${tech.general_info}`);
+    }
+    if (tech.applications) {
+      parts.push(`**Applications:**\n${tech.applications}`);
+    }
+    if (tech.elsa_data) {
+      parts.push(`**ELSA Considerations:**\n${tech.elsa_data}`);
+    }
+
+    return parts.join('\n\n');
+  });
+
+  return `\n\n---\n\n## TECHNOLOGY KNOWLEDGE\n\n${techSections.join('\n\n---\n\n')}\n\n---\n`;
+}
+
 // Call Gemini API
 async function callGemini(apiKey, contents, systemInstruction = null) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
@@ -243,12 +266,13 @@ If you cannot read a card clearly, use null for that field.`;
 
 // Phase 1: Generate 2050 scenario
 async function generateScenario(apiKey, payload) {
-  const { archetype, resources, system, value, tech1, tech2, language, prompt, sectorKnowledge } = payload;
+  const { archetype, resources, system, value, tech1, tech2, language, prompt, sectorKnowledge, technologyData } = payload;
 
-  // Build system instruction with sector knowledge
+  // Build system instruction with sector and technology knowledge
   const basePrompt = prompt || `You are a speculative futures writer creating a vivid scenario for the year 2050, focused on the Dutch migration sector.`;
   const sectorKnowledgeText = formatSectorKnowledge(sectorKnowledge);
-  const systemInstruction = basePrompt + sectorKnowledgeText;
+  const technologyKnowledgeText = formatTechnologyData(technologyData);
+  const systemInstruction = basePrompt + sectorKnowledgeText + technologyKnowledgeText;
 
   const userPrompt = `Generate a 2050 scenario with these parameters:
 - Archetype: ${archetype}
@@ -258,7 +282,7 @@ async function generateScenario(apiKey, payload) {
 - Technologies: ${tech1}, ${tech2}
 - Language: ${language === 'nl' ? 'Dutch' : 'English'}
 
-Use the sector knowledge provided to ground the scenario in the Dutch migration context.`;
+Use the sector and technology knowledge provided to ground the scenario.`;
 
   const contents = [{ parts: [{ text: userPrompt }] }];
   return await callGemini(apiKey, contents, systemInstruction);
@@ -266,14 +290,15 @@ Use the sector knowledge provided to ground the scenario in the Dutch migration 
 
 // Phases 2-4: Generate backcasting narrative
 async function generateBackcasting(apiKey, payload) {
-  const { year, scenario2050, archetype, value, tech1, tech2, previousPhases, language, prompt, sectorKnowledge } = payload;
+  const { year, scenario2050, archetype, value, tech1, tech2, previousPhases, language, prompt, sectorKnowledge, technologyData } = payload;
 
   const speculationLevel = year === '2040' ? 'high' : year === '2035' ? 'medium' : 'low';
 
-  // Build system instruction with sector knowledge
+  // Build system instruction with sector and technology knowledge
   const basePrompt = prompt || `You are helping workshop participants understand how we might arrive at a 2050 future by looking backward through time.`;
   const sectorKnowledgeText = formatSectorKnowledge(sectorKnowledge);
-  const systemInstruction = basePrompt + sectorKnowledgeText;
+  const technologyKnowledgeText = formatTechnologyData(technologyData);
+  const systemInstruction = basePrompt + sectorKnowledgeText + technologyKnowledgeText;
 
   const previousContext = previousPhases ? `\n\nPrevious backcasting phases:\n${previousPhases}` : '';
 
@@ -289,7 +314,7 @@ Parameters:
 - Language: ${language === 'nl' ? 'Dutch' : 'English'}
 ${previousContext}
 
-Use the sector knowledge provided to ground the narrative in the Dutch migration context.`;
+Use the sector and technology knowledge provided to ground the narrative.`;
 
   const contents = [{ parts: [{ text: userPrompt }] }];
   return await callGemini(apiKey, contents, systemInstruction);
@@ -321,12 +346,13 @@ Write 4-6 sentences. A snapshot scene, not analysis. Match the tone to the arche
 
 // Phase 6: Generate consequences and altered scenario
 async function generateConsequence(apiKey, payload) {
-  const { intervention, scenario2050, archetype, value, tech1, tech2, backcastingJourney, language, prompt, sectorKnowledge } = payload;
+  const { intervention, scenario2050, archetype, value, tech1, tech2, backcastingJourney, language, prompt, sectorKnowledge, technologyData } = payload;
 
-  // Build system instruction with sector knowledge
+  // Build system instruction with sector and technology knowledge
   const basePrompt = prompt || `You are analyzing how a strategic intervention made TODAY (2026) would ripple forward and alter the 2050 scenario.`;
   const sectorKnowledgeText = formatSectorKnowledge(sectorKnowledge);
-  const systemInstruction = basePrompt + sectorKnowledgeText;
+  const technologyKnowledgeText = formatTechnologyData(technologyData);
+  const systemInstruction = basePrompt + sectorKnowledgeText + technologyKnowledgeText;
 
   const userPrompt = `Analyze this intervention and rewrite the future:
 
@@ -344,7 +370,7 @@ Parameters:
 - Technologies: ${tech1}, ${tech2}
 - Language: ${language === 'nl' ? 'Dutch' : 'English'}
 
-Use the sector knowledge provided to ground the analysis in the Dutch migration context.
+Use the sector and technology knowledge provided to ground the analysis.
 
 OUTPUT FORMAT (use these exact headers):
 ## CONSEQUENCE OF THE INTERVENTION
