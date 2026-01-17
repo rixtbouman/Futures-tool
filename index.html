@@ -1310,6 +1310,9 @@
               <div id="viewer-insight-3" style="color: var(--gray);">—</div>
             </div>
           </div>
+
+          <button onclick="downloadPDF()" class="full-width accent" data-lang-key="downloadPDF">Download PDF Report</button>
+          <button onclick="leaveSession()" class="full-width secondary" style="margin-top: 12px;" data-lang-key="leaveSession">Leave Session</button>
         </div>
       </div>
 
@@ -1445,6 +1448,7 @@
         keyInsights: 'Belangrijkste Inzichten',
         downloadPDF: 'Download PDF Rapport',
         endSession: 'Sessie Beëindigen',
+        leaveSession: 'Sessie Verlaten',
         sessionComplete: 'Sessie Voltooid',
         thankYouMessage: 'Hartelijk dank voor het delen van uw waardevolle perspectieven op de toekomst.',
         startNewSession: 'Start Nieuwe Sessie',
@@ -1518,6 +1522,7 @@
         keyInsights: 'Key Insights',
         downloadPDF: 'Download PDF Report',
         endSession: 'End Session',
+        leaveSession: 'Leave Session',
         sessionComplete: 'Session Complete',
         thankYouMessage: 'Thank you for sharing your valuable perspectives on the future.',
         startNewSession: 'Start New Session',
@@ -2630,6 +2635,11 @@ Centre for Quantum & Society
           console.error('Error updating session:', err);
         }
       }
+      showScreen('screen-end');
+    }
+
+    function leaveSession() {
+      // For viewers: just navigate to end screen without updating database
       showScreen('screen-end');
     }
 
