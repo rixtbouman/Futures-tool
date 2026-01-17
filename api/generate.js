@@ -28,6 +28,9 @@ module.exports = async function handler(req, res) {
       case 'recognize':
         result = await recognizeCards(apiKey, payload);
         break;
+      case 'recognizePerspective':
+        result = await recognizePerspectiveCards(apiKey, payload);
+        break;
       case 'scenario':
         result = await generateScenario(apiKey, payload);
         break;
@@ -169,6 +172,73 @@ If you cannot read a card clearly, use null for that field.`;
   }
 
   return { error: 'Could not parse card recognition', raw: result };
+}
+
+// Recognize Actor/Lens cards for Perspective Snapshot
+async function recognizePerspectiveCards(apiKey, payload) {
+  const { imageBase64, mimeType } = payload;
+
+  const systemInstruction = `You are a card recognition system. Analyze the image and identify the Actor and Lens cards shown.
+
+Look for these cards:
+
+ACTORS (identify one):
+- "National Political Party"
+- "Foreign State"
+- "Citizens"
+- "NGO"
+- "Journalists"
+- "Research Institution"
+- "Local Government / Municipality"
+- "EU Institution"
+- "Big Tech"
+
+LENSES (identify one):
+- "Housing"
+- "Law & Rights"
+- "Security"
+- "Election"
+- "Public Opinion"
+- "Labor"
+- "Healthcare"
+- "Family"
+- "Education"
+- "Transport"
+
+Return ONLY valid JSON in this exact format:
+{
+  "actor": the actor name as shown above or null if not visible,
+  "lens": the lens name as shown above or null if not visible,
+  "confidence": "high", "medium", or "low"
+}
+
+If you cannot read a card clearly, use null for that field.`;
+
+  const contents = [{
+    parts: [
+      { text: "Identify the Actor and Lens cards in this image and return the JSON." },
+      {
+        inlineData: {
+          mimeType: mimeType || 'image/jpeg',
+          data: imageBase64
+        }
+      }
+    ]
+  }];
+
+  const result = await callGemini(apiKey, contents, systemInstruction);
+
+  // Parse JSON from response
+  try {
+    const jsonMatch = result.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (e) {
+    console.error('JSON parse error:', e);
+  }
+
+  return { error: 'Could not parse perspective card recognition', raw: result };
 }
 
 // Phase 1: Generate 2050 scenario

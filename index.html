@@ -832,21 +832,34 @@
           <p style="font-size: 14px; color: var(--gray); margin-bottom: 16px;" data-lang-key="perspectiveSnapshotDesc">Zoom in on a specific actor and lens to see this future through their eyes.</p>
 
           <div class="moderator-only">
+            <!-- Photo Upload for Actor/Lens Cards -->
+            <div class="photo-upload" onclick="document.getElementById('perspective-photo-2040').click()" style="margin-bottom: 16px;">
+              <svg class="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px;">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              <p data-lang-key="clickToUploadPerspective">Click to take a photo of actor & lens cards</p>
+              <input type="file" id="perspective-photo-2040" accept="image/*" capture="environment" onchange="handlePerspectivePhotoUpload(event, '2040')" style="display: none;">
+            </div>
+
+            <div style="text-align: center; margin: 16px 0; color: var(--text-muted); font-size: 13px;">
+              <span data-lang-key="orManualSelect">— or select manually —</span>
+            </div>
+
             <div class="grid">
               <div class="select-group">
                 <label data-lang-key="selectActor">Actor</label>
                 <select id="select-actor-2040" onchange="handleActorChange('2040')">
                   <option value="" disabled selected data-lang-key="choose">Choose...</option>
-                  <option value="political party">Political Party</option>
+                  <option value="national political party">National Political Party</option>
                   <option value="foreign state">Foreign State</option>
                   <option value="citizens">Citizens</option>
                   <option value="ngo">NGO</option>
-                  <option value="journalist">Journalist</option>
+                  <option value="journalists">Journalists</option>
                   <option value="research institution">Research Institution</option>
-                  <option value="municipality">Municipality</option>
-                  <option value="migrant community">Migrant Community</option>
+                  <option value="local government / municipality">Local Government / Municipality</option>
                   <option value="eu institution">EU Institution</option>
-                  <option value="employer">Employer / Business</option>
+                  <option value="big tech">Big Tech</option>
                   <option value="custom">Custom...</option>
                 </select>
                 <input type="text" id="custom-actor-2040" placeholder="Enter custom actor" class="hidden" style="margin-top: 8px;">
@@ -855,16 +868,16 @@
                 <label data-lang-key="selectLens">Lens</label>
                 <select id="select-lens-2040" onchange="handleLensChange('2040')">
                   <option value="" disabled selected data-lang-key="choose">Choose...</option>
-                  <option value="election">Election</option>
-                  <option value="economy">Economy</option>
-                  <option value="geopolitics">Geopolitics</option>
-                  <option value="climate">Climate</option>
-                  <option value="technology">Technology</option>
-                  <option value="security">Security</option>
-                  <option value="demographics">Demographics</option>
-                  <option value="law and rights">Law & Rights</option>
-                  <option value="public opinion">Public Opinion</option>
                   <option value="housing">Housing</option>
+                  <option value="law & rights">Law & Rights</option>
+                  <option value="security">Security</option>
+                  <option value="election">Election</option>
+                  <option value="public opinion">Public Opinion</option>
+                  <option value="labor">Labor</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="family">Family</option>
+                  <option value="education">Education</option>
+                  <option value="transport">Transport</option>
                   <option value="custom">Custom...</option>
                 </select>
                 <input type="text" id="custom-lens-2040" placeholder="Enter custom lens" class="hidden" style="margin-top: 8px;">
@@ -910,21 +923,34 @@
           <p style="font-size: 14px; color: var(--gray); margin-bottom: 16px;" data-lang-key="perspectiveSnapshotDesc">Zoom in on a specific actor and lens to see this future through their eyes.</p>
 
           <div class="moderator-only">
+            <!-- Photo Upload for Actor/Lens Cards -->
+            <div class="photo-upload" onclick="document.getElementById('perspective-photo-2035').click()" style="margin-bottom: 16px;">
+              <svg class="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px;">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              <p data-lang-key="clickToUploadPerspective">Click to take a photo of actor & lens cards</p>
+              <input type="file" id="perspective-photo-2035" accept="image/*" capture="environment" onchange="handlePerspectivePhotoUpload(event, '2035')" style="display: none;">
+            </div>
+
+            <div style="text-align: center; margin: 16px 0; color: var(--text-muted); font-size: 13px;">
+              <span data-lang-key="orManualSelect">— or select manually —</span>
+            </div>
+
             <div class="grid">
               <div class="select-group">
                 <label data-lang-key="selectActor">Actor</label>
                 <select id="select-actor-2035" onchange="handleActorChange('2035')">
                   <option value="" disabled selected data-lang-key="choose">Choose...</option>
-                  <option value="political party">Political Party</option>
+                  <option value="national political party">National Political Party</option>
                   <option value="foreign state">Foreign State</option>
                   <option value="citizens">Citizens</option>
                   <option value="ngo">NGO</option>
-                  <option value="journalist">Journalist</option>
+                  <option value="journalists">Journalists</option>
                   <option value="research institution">Research Institution</option>
-                  <option value="municipality">Municipality</option>
-                  <option value="migrant community">Migrant Community</option>
+                  <option value="local government / municipality">Local Government / Municipality</option>
                   <option value="eu institution">EU Institution</option>
-                  <option value="employer">Employer / Business</option>
+                  <option value="big tech">Big Tech</option>
                   <option value="custom">Custom...</option>
                 </select>
                 <input type="text" id="custom-actor-2035" placeholder="Enter custom actor" class="hidden" style="margin-top: 8px;">
@@ -933,16 +959,16 @@
                 <label data-lang-key="selectLens">Lens</label>
                 <select id="select-lens-2035" onchange="handleLensChange('2035')">
                   <option value="" disabled selected data-lang-key="choose">Choose...</option>
-                  <option value="election">Election</option>
-                  <option value="economy">Economy</option>
-                  <option value="geopolitics">Geopolitics</option>
-                  <option value="climate">Climate</option>
-                  <option value="technology">Technology</option>
-                  <option value="security">Security</option>
-                  <option value="demographics">Demographics</option>
-                  <option value="law and rights">Law & Rights</option>
-                  <option value="public opinion">Public Opinion</option>
                   <option value="housing">Housing</option>
+                  <option value="law & rights">Law & Rights</option>
+                  <option value="security">Security</option>
+                  <option value="election">Election</option>
+                  <option value="public opinion">Public Opinion</option>
+                  <option value="labor">Labor</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="family">Family</option>
+                  <option value="education">Education</option>
+                  <option value="transport">Transport</option>
                   <option value="custom">Custom...</option>
                 </select>
                 <input type="text" id="custom-lens-2035" placeholder="Enter custom lens" class="hidden" style="margin-top: 8px;">
@@ -988,21 +1014,34 @@
           <p style="font-size: 14px; color: var(--gray); margin-bottom: 16px;" data-lang-key="perspectiveSnapshotDesc">Zoom in on a specific actor and lens to see this future through their eyes.</p>
 
           <div class="moderator-only">
+            <!-- Photo Upload for Actor/Lens Cards -->
+            <div class="photo-upload" onclick="document.getElementById('perspective-photo-2030').click()" style="margin-bottom: 16px;">
+              <svg class="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px;">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              <p data-lang-key="clickToUploadPerspective">Click to take a photo of actor & lens cards</p>
+              <input type="file" id="perspective-photo-2030" accept="image/*" capture="environment" onchange="handlePerspectivePhotoUpload(event, '2030')" style="display: none;">
+            </div>
+
+            <div style="text-align: center; margin: 16px 0; color: var(--text-muted); font-size: 13px;">
+              <span data-lang-key="orManualSelect">— or select manually —</span>
+            </div>
+
             <div class="grid">
               <div class="select-group">
                 <label data-lang-key="selectActor">Actor</label>
                 <select id="select-actor-2030" onchange="handleActorChange('2030')">
                   <option value="" disabled selected data-lang-key="choose">Choose...</option>
-                  <option value="political party">Political Party</option>
+                  <option value="national political party">National Political Party</option>
                   <option value="foreign state">Foreign State</option>
                   <option value="citizens">Citizens</option>
                   <option value="ngo">NGO</option>
-                  <option value="journalist">Journalist</option>
+                  <option value="journalists">Journalists</option>
                   <option value="research institution">Research Institution</option>
-                  <option value="municipality">Municipality</option>
-                  <option value="migrant community">Migrant Community</option>
+                  <option value="local government / municipality">Local Government / Municipality</option>
                   <option value="eu institution">EU Institution</option>
-                  <option value="employer">Employer / Business</option>
+                  <option value="big tech">Big Tech</option>
                   <option value="custom">Custom...</option>
                 </select>
                 <input type="text" id="custom-actor-2030" placeholder="Enter custom actor" class="hidden" style="margin-top: 8px;">
@@ -1011,16 +1050,16 @@
                 <label data-lang-key="selectLens">Lens</label>
                 <select id="select-lens-2030" onchange="handleLensChange('2030')">
                   <option value="" disabled selected data-lang-key="choose">Choose...</option>
-                  <option value="election">Election</option>
-                  <option value="economy">Economy</option>
-                  <option value="geopolitics">Geopolitics</option>
-                  <option value="climate">Climate</option>
-                  <option value="technology">Technology</option>
-                  <option value="security">Security</option>
-                  <option value="demographics">Demographics</option>
-                  <option value="law and rights">Law & Rights</option>
-                  <option value="public opinion">Public Opinion</option>
                   <option value="housing">Housing</option>
+                  <option value="law & rights">Law & Rights</option>
+                  <option value="security">Security</option>
+                  <option value="election">Election</option>
+                  <option value="public opinion">Public Opinion</option>
+                  <option value="labor">Labor</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="family">Family</option>
+                  <option value="education">Education</option>
+                  <option value="transport">Transport</option>
                   <option value="custom">Custom...</option>
                 </select>
                 <input type="text" id="custom-lens-2030" placeholder="Enter custom lens" class="hidden" style="margin-top: 8px;">
@@ -1301,7 +1340,8 @@
         next: 'Volgende',
         goToPhase: 'Ga erheen',
         moderatorMovedTo: 'De moderator is naar Fase {phase} gegaan',
-        waitingForModerator: 'Wachten op moderator...'
+        waitingForModerator: 'Wachten op moderator...',
+        clickToUploadPerspective: 'Klik om een foto te maken van de actor & lens kaarten'
       },
       en: {
         start: 'Start',
@@ -1370,7 +1410,8 @@
         next: 'Next',
         goToPhase: 'Go there',
         moderatorMovedTo: 'Moderator moved to Phase {phase}',
-        waitingForModerator: 'Waiting for moderator...'
+        waitingForModerator: 'Waiting for moderator...',
+        clickToUploadPerspective: 'Click to take a photo of actor & lens cards'
       }
     };
 
@@ -1948,6 +1989,93 @@
       show('btn-generate-scenario');
 
       syncStateToDatabase();
+    }
+
+    // ===== PERSPECTIVE PHOTO UPLOAD =====
+    async function handlePerspectivePhotoUpload(event, year) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const base64 = e.target.result.split(',')[1];
+
+        try {
+          const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'recognizePerspective',
+              payload: {
+                imageBase64: base64,
+                mimeType: file.type
+              }
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.success && data.result) {
+            const result = data.result;
+
+            // Set actor dropdown
+            if (result.actor) {
+              const actorSelect = document.getElementById(`select-actor-${year}`);
+              const actorValue = result.actor.toLowerCase();
+
+              // Try to find matching option
+              let found = false;
+              for (let option of actorSelect.options) {
+                if (option.value.toLowerCase() === actorValue ||
+                    option.value.toLowerCase().includes(actorValue) ||
+                    actorValue.includes(option.value.toLowerCase())) {
+                  actorSelect.value = option.value;
+                  found = true;
+                  break;
+                }
+              }
+
+              // If not found, use custom
+              if (!found) {
+                actorSelect.value = 'custom';
+                const customInput = document.getElementById(`custom-actor-${year}`);
+                customInput.classList.remove('hidden');
+                customInput.value = result.actor;
+              }
+            }
+
+            // Set lens dropdown
+            if (result.lens) {
+              const lensSelect = document.getElementById(`select-lens-${year}`);
+              const lensValue = result.lens.toLowerCase();
+
+              // Try to find matching option
+              let found = false;
+              for (let option of lensSelect.options) {
+                if (option.value.toLowerCase() === lensValue ||
+                    option.value.toLowerCase().includes(lensValue) ||
+                    lensValue.includes(option.value.toLowerCase())) {
+                  lensSelect.value = option.value;
+                  found = true;
+                  break;
+                }
+              }
+
+              // If not found, use custom
+              if (!found) {
+                lensSelect.value = 'custom';
+                const customInput = document.getElementById(`custom-lens-${year}`);
+                customInput.classList.remove('hidden');
+                customInput.value = result.lens;
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Perspective photo recognition error:', error);
+        }
+      };
+
+      reader.readAsDataURL(file);
     }
 
     // ===== ACTOR/LENS HANDLERS =====
