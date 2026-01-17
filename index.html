@@ -6,6 +6,7 @@
   <title>Futures Exploration Tool</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -336,20 +337,44 @@
       padding: 20px;
       border-radius: var(--radius);
       margin: 16px 0;
-      white-space: pre-wrap;
       line-height: 1.7;
     }
 
-    .generated-content .content-header {
+    .generated-content h2,
+    .generated-content h3 {
       font-family: 'Roboto Mono', monospace;
       font-weight: 600;
-      color: var(--primary);
-      margin-top: 16px;
+      color: #4169E1; /* Royal blue */
+      margin-top: 24px;
+      margin-bottom: 12px;
+      font-size: 1.1em;
+    }
+
+    .generated-content h2:first-child,
+    .generated-content h3:first-child {
+      margin-top: 0;
+    }
+
+    .generated-content p {
+      margin-bottom: 12px;
+    }
+
+    .generated-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .generated-content ul,
+    .generated-content ol {
+      margin: 12px 0;
+      padding-left: 24px;
+    }
+
+    .generated-content li {
       margin-bottom: 8px;
     }
 
-    .generated-content .content-header:first-child {
-      margin-top: 0;
+    .generated-content strong {
+      font-weight: 600;
     }
 
     /* Archetype reveal */
@@ -1458,18 +1483,10 @@
       });
     }
 
-    function formatGeneratedContent(text) {
+    function renderMarkdown(text) {
       if (!text) return '';
-      // Simple header detection and styling
-      const lines = text.split('\n');
-      const formatted = lines.map(line => {
-        // Detect headers (lines ending with : or all caps short lines)
-        if (line.match(/^[A-Z][^.!?]*:$/) || line.match(/^[A-Z\s]{5,30}$/)) {
-          return `<span class="content-header">${line}</span>`;
-        }
-        return line;
-      });
-      return formatted.join('\n');
+      // Use marked.js to render markdown to HTML
+      return marked.parse(text);
     }
 
     // Debounce function for input syncing
@@ -1695,18 +1712,18 @@
 
       // Update any generated content that may have changed
       if (appState.scenario2050) {
-        document.getElementById('scenario-content').innerHTML = formatGeneratedContent(appState.scenario2050);
+        document.getElementById('scenario-content').innerHTML = renderMarkdown(appState.scenario2050);
         show('scenario-2050');
       }
 
       ['2040', '2035', '2030'].forEach(year => {
         if (appState.backcasting[year].narrative) {
-          document.getElementById(`backcasting-${year}-content`).innerHTML = formatGeneratedContent(appState.backcasting[year].narrative);
+          document.getElementById(`backcasting-${year}-content`).innerHTML = renderMarkdown(appState.backcasting[year].narrative);
           show(`backcasting-${year}`);
           show(`vignette-section-${year}`);
         }
         if (appState.backcasting[year].vignette) {
-          document.getElementById(`vignette-${year}-content`).innerHTML = formatGeneratedContent(appState.backcasting[year].vignette);
+          document.getElementById(`vignette-${year}-content`).innerHTML = renderMarkdown(appState.backcasting[year].vignette);
           show(`vignette-${year}`);
         }
       });
@@ -1719,7 +1736,7 @@
 
       if (appState.consequenceAnalysis) {
         document.getElementById('delta-intervention').textContent = appState.intervention;
-        document.getElementById('consequence-analysis-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequenceAnalysis || ''));
+        document.getElementById('consequence-analysis-content').innerHTML = renderMarkdown(appState.consequenceAnalysis || '');
         document.getElementById('original-scenario-display').textContent = appState.scenario2050;
         show('delta-report');
       }
@@ -1834,20 +1851,20 @@
         hide('manual-card-selection');
       }
       if (appState.scenario2050) {
-        document.getElementById('scenario-content').innerHTML = formatGeneratedContent(appState.scenario2050);
+        document.getElementById('scenario-content').innerHTML = renderMarkdown(appState.scenario2050);
         show('scenario-2050');
         hide('btn-generate-scenario');
       }
 
       ['2040', '2035', '2030'].forEach(year => {
         if (appState.backcasting[year].narrative) {
-          document.getElementById(`backcasting-${year}-content`).innerHTML = formatGeneratedContent(appState.backcasting[year].narrative);
+          document.getElementById(`backcasting-${year}-content`).innerHTML = renderMarkdown(appState.backcasting[year].narrative);
           show(`backcasting-${year}`);
           show(`vignette-section-${year}`);
           hide(`btn-generate-${year}`);
         }
         if (appState.backcasting[year].vignette) {
-          document.getElementById(`vignette-${year}-content`).innerHTML = formatGeneratedContent(appState.backcasting[year].vignette);
+          document.getElementById(`vignette-${year}-content`).innerHTML = renderMarkdown(appState.backcasting[year].vignette);
           show(`vignette-${year}`);
         }
       });
@@ -1859,7 +1876,7 @@
 
       if (appState.consequenceAnalysis) {
         document.getElementById('delta-intervention').textContent = appState.intervention;
-        document.getElementById('consequence-analysis-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequenceAnalysis || ''));
+        document.getElementById('consequence-analysis-content').innerHTML = renderMarkdown(appState.consequenceAnalysis || '');
         document.getElementById('original-scenario-display').textContent = appState.scenario2050;
         show('delta-report');
       }
@@ -2126,7 +2143,7 @@
 
         if (data.success) {
           appState.scenario2050 = data.result;
-          document.getElementById('scenario-content').innerHTML = formatGeneratedContent(data.result);
+          document.getElementById('scenario-content').innerHTML = renderMarkdown(data.result);
           show('scenario-2050');
           syncStateToDatabase();
         }
@@ -2199,7 +2216,7 @@
 
         if (data.success) {
           appState.backcasting[year].narrative = data.result;
-          document.getElementById(`backcasting-${year}-content`).innerHTML = formatGeneratedContent(data.result);
+          document.getElementById(`backcasting-${year}-content`).innerHTML = renderMarkdown(data.result);
           show(`backcasting-${year}`);
           show(`vignette-section-${year}`);
           syncStateToDatabase();
@@ -2277,7 +2294,7 @@
           appState.backcasting[year].vignette = data.result;
           appState.backcasting[year].actor = actor;
           appState.backcasting[year].lens = lens;
-          document.getElementById(`vignette-${year}-content`).innerHTML = formatGeneratedContent(data.result);
+          document.getElementById(`vignette-${year}-content`).innerHTML = renderMarkdown(data.result);
           show(`vignette-${year}`);
           syncStateToDatabase();
         }
@@ -2353,7 +2370,7 @@
           appState.consequenceAnalysis = data.result;
 
           document.getElementById('delta-intervention').textContent = appState.intervention;
-          document.getElementById('consequence-analysis-content').innerHTML = formatGeneratedContent(stripMarkdown(appState.consequenceAnalysis));
+          document.getElementById('consequence-analysis-content').innerHTML = renderMarkdown(appState.consequenceAnalysis);
           document.getElementById('original-scenario-display').textContent = appState.scenario2050;
 
           show('delta-report');
@@ -2365,20 +2382,6 @@
       }
 
       hide('loading-consequences');
-    }
-
-    function stripMarkdown(text) {
-      if (!text) return '';
-      return text
-        // Remove bold/italic markers
-        .replace(/\*\*([^*]+)\*\*/g, '$1')
-        .replace(/\*([^*]+)\*/g, '$1')
-        .replace(/__([^_]+)__/g, '$1')
-        .replace(/_([^_]+)_/g, '$1')
-        // Remove headers
-        .replace(/^#{1,6}\s+/gm, '')
-        // Clean up extra whitespace
-        .replace(/\n{3,}/g, '\n\n');
     }
 
     async function saveCompletedSession() {
