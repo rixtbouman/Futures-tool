@@ -219,9 +219,11 @@ function getScenarioParams(payload) {
   const sectorContext = formatSectorKnowledge(sectorKnowledge);
   const techContext = formatTechnologyData(technologyData);
 
+  const langInstruction = `CRITICAL LANGUAGE REQUIREMENT: You MUST write your ENTIRE response in ${language === 'nl' ? 'Dutch' : 'English'}. Not a single word in ${language === 'nl' ? 'English' : 'Dutch'}.\n\n`;
+
   const systemInstruction = prompt
-    ? `${prompt}${sectorContext}${techContext}\n\nIMPORTANT: Write in ${language === 'nl' ? 'Dutch' : 'English'}. Use markdown headers (##, ###) to structure your response.`
-    : `You are a futures scenario writer creating vivid 2050 scenarios for the Dutch migration sector.${sectorContext}${techContext}\n\nWrite in ${language === 'nl' ? 'Dutch' : 'English'}. Use markdown headers to structure your response.`;
+    ? `${langInstruction}${prompt}${sectorContext}${techContext}`
+    : `${langInstruction}You are a futures scenario writer creating vivid 2050 scenarios for the Dutch migration sector.${sectorContext}${techContext}`;
 
   const contents = [{
     role: 'user',
@@ -233,7 +235,7 @@ function getScenarioParams(payload) {
 - Dominant Value: ${value}
 - Technologies: ${tech1}, ${tech2}
 
-Write a compelling, detailed scenario (400-500 words) with clear markdown structure.`
+Follow the structure and length specified in your instructions. Be specific and vivid, not generic.`
     }]
   }];
 
@@ -246,15 +248,17 @@ function getBackcastingParams(payload) {
   const sectorContext = formatSectorKnowledge(sectorKnowledge);
   const techContext = formatTechnologyData(technologyData);
 
+  const langInstruction = `CRITICAL LANGUAGE REQUIREMENT: You MUST write your ENTIRE response in ${language === 'nl' ? 'Dutch' : 'English'}. Not a single word in ${language === 'nl' ? 'English' : 'Dutch'}.\n\n`;
+
   const systemInstruction = prompt
-    ? `${prompt}${sectorContext}${techContext}\n\nIMPORTANT: Write in ${language === 'nl' ? 'Dutch' : 'English'}. Use markdown headers to structure your response.`
-    : `You are a strategic foresight expert helping trace the path from 2050 back to today for Dutch migration policy.${sectorContext}${techContext}\n\nWrite in ${language === 'nl' ? 'Dutch' : 'English'}. Use markdown headers to structure.`;
+    ? `${langInstruction}${prompt}${sectorContext}${techContext}`
+    : `${langInstruction}You are a strategic foresight expert helping trace the path from 2050 back to today for Dutch migration policy.${sectorContext}${techContext}`;
 
   let userPrompt = `Based on this 2050 scenario:\n${scenario2050}\n\nDescribe what the migration landscape looks like in ${year}.`;
   if (previousPhases) {
     userPrompt += `\n\nPrevious phases:\n${previousPhases}`;
   }
-  userPrompt += `\n\nContext: Archetype=${archetype}, Value=${value}, Tech=${tech1}+${tech2}\n\nWrite 300-400 words with clear markdown structure.`;
+  userPrompt += `\n\nContext: Archetype=${archetype}, Value=${value}, Tech=${tech1}+${tech2}\n\nFollow the structure and length specified in your instructions. Be concrete and specific.`;
 
   const contents = [{
     role: 'user',
@@ -267,9 +271,11 @@ function getBackcastingParams(payload) {
 function getVignetteParams(payload) {
   const { year, actor, lens, archetype, value, tech1, tech2, backcastingNarrative, language, prompt } = payload;
 
+  const langInstruction = `CRITICAL LANGUAGE REQUIREMENT: You MUST write your ENTIRE response in ${language === 'nl' ? 'Dutch' : 'English'}. Not a single word in ${language === 'nl' ? 'English' : 'Dutch'}.\n\n`;
+
   const systemInstruction = prompt
-    ? `${prompt}\n\nIMPORTANT: Write in ${language === 'nl' ? 'Dutch' : 'English'}. Create an immersive first-person narrative.`
-    : `You are a creative writer crafting immersive first-person vignettes for futures workshops.\n\nWrite in ${language === 'nl' ? 'Dutch' : 'English'}.`;
+    ? `${langInstruction}${prompt}`
+    : `${langInstruction}You are a creative writer crafting immersive first-person vignettes for futures workshops.`;
 
   const contents = [{
     role: 'user',
@@ -280,7 +286,7 @@ function getVignetteParams(payload) {
 - Context: ${backcastingNarrative}
 - Setting: Archetype=${archetype}, Value=${value}, Tech=${tech1}+${tech2}
 
-Write 200-300 words as an immersive "day in the life" narrative from this person's perspective.`
+Follow the structure and length specified in your instructions. Make it vivid and personal.`
     }]
   }];
 
@@ -293,9 +299,11 @@ function getConsequenceParams(payload) {
   const sectorContext = formatSectorKnowledge(sectorKnowledge);
   const techContext = formatTechnologyData(technologyData);
 
+  const langInstruction = `CRITICAL LANGUAGE REQUIREMENT: You MUST write your ENTIRE response in ${language === 'nl' ? 'Dutch' : 'English'}. Not a single word in ${language === 'nl' ? 'English' : 'Dutch'}.\n\n`;
+
   const systemInstruction = prompt
-    ? `${prompt}${sectorContext}${techContext}\n\nIMPORTANT: Write in ${language === 'nl' ? 'Dutch' : 'English'}. Use markdown headers to structure your analysis.`
-    : `You are a policy analyst examining consequences of interventions in the Dutch migration sector.${sectorContext}${techContext}\n\nWrite in ${language === 'nl' ? 'Dutch' : 'English'}. Use markdown headers.`;
+    ? `${langInstruction}${prompt}${sectorContext}${techContext}`
+    : `${langInstruction}You are a policy analyst examining consequences of interventions in the Dutch migration sector.${sectorContext}${techContext}\n\nStructure your analysis with: Consequences, 2nd Order Effects, 3rd Order Effects, ELSA Implications, and Altered 2050 Scenario.`;
 
   const contents = [{
     role: 'user',
@@ -308,7 +316,7 @@ Context:
 - Backcasting journey: ${backcastingJourney}
 - Setting: Archetype=${archetype}, Value=${value}, Tech=${tech1}+${tech2}
 
-Provide a structured analysis (400-500 words) of potential consequences, unintended effects, and strategic considerations. Use clear markdown headers.`
+Follow the exact structure and length specified in your instructions. Use markdown headers for each section.`
     }]
   }];
 

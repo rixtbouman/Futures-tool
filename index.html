@@ -982,8 +982,7 @@
                   <option value="" disabled selected data-lang-key="choose">Choose...</option>
                   <option value="housing">Housing</option>
                   <option value="law & rights">Law & Rights</option>
-                  <option value="security">Security</option>
-                  <option value="election">Election</option>
+                                    <option value="election">Election</option>
                   <option value="public opinion">Public Opinion</option>
                   <option value="labor">Labor</option>
                   <option value="healthcare">Healthcare</option>
@@ -1073,8 +1072,7 @@
                   <option value="" disabled selected data-lang-key="choose">Choose...</option>
                   <option value="housing">Housing</option>
                   <option value="law & rights">Law & Rights</option>
-                  <option value="security">Security</option>
-                  <option value="election">Election</option>
+                                    <option value="election">Election</option>
                   <option value="public opinion">Public Opinion</option>
                   <option value="labor">Labor</option>
                   <option value="healthcare">Healthcare</option>
@@ -1164,8 +1162,7 @@
                   <option value="" disabled selected data-lang-key="choose">Choose...</option>
                   <option value="housing">Housing</option>
                   <option value="law & rights">Law & Rights</option>
-                  <option value="security">Security</option>
-                  <option value="election">Election</option>
+                                    <option value="election">Election</option>
                   <option value="public opinion">Public Opinion</option>
                   <option value="labor">Labor</option>
                   <option value="healthcare">Healthcare</option>
@@ -1989,6 +1986,18 @@
         }
       }
 
+      // Moderator: populate Phase 7 inputs with existing values
+      if (appState.role === 'moderator' && phase === 7) {
+        if (appState.teamName) {
+          document.getElementById('team-name-input').value = appState.teamName;
+        }
+        if (appState.insights) {
+          if (appState.insights.insight1) document.getElementById('insight-1').value = appState.insights.insight1;
+          if (appState.insights.insight2) document.getElementById('insight-2').value = appState.insights.insight2;
+          if (appState.insights.insight3) document.getElementById('insight-3').value = appState.insights.insight3;
+        }
+      }
+
       if (appState.role === 'moderator') {
         syncStateToDatabase();
       }
@@ -2241,31 +2250,38 @@
 
           const data = await response.json();
 
+          console.log('Perspective recognition response:', data);
+
           if (data.success && data.result) {
             const result = data.result;
+            console.log('Recognized cards:', result);
 
             // Set actor dropdown
             if (result.actor) {
               const actorSelect = document.getElementById(`select-actor-${year}`);
-              const actorValue = result.actor.toLowerCase();
+              const actorValue = result.actor.toLowerCase().trim();
+              console.log('Looking for actor:', actorValue);
 
               // Try to find matching option
               let found = false;
               for (let option of actorSelect.options) {
-                if (option.value.toLowerCase() === actorValue ||
-                    option.value.toLowerCase().includes(actorValue) ||
-                    actorValue.includes(option.value.toLowerCase())) {
+                const optionVal = option.value.toLowerCase().trim();
+                if (optionVal === actorValue ||
+                    optionVal.includes(actorValue) ||
+                    actorValue.includes(optionVal)) {
                   actorSelect.value = option.value;
                   found = true;
+                  console.log('Actor matched:', option.value);
                   break;
                 }
               }
 
               // If not found, use custom
               if (!found) {
+                console.log('Actor not found, using custom');
                 actorSelect.value = 'custom';
+                handleActorChange(year);
                 const customInput = document.getElementById(`custom-actor-${year}`);
-                customInput.classList.remove('hidden');
                 customInput.value = result.actor;
               }
             }
@@ -2273,25 +2289,29 @@
             // Set lens dropdown
             if (result.lens) {
               const lensSelect = document.getElementById(`select-lens-${year}`);
-              const lensValue = result.lens.toLowerCase();
+              const lensValue = result.lens.toLowerCase().trim();
+              console.log('Looking for lens:', lensValue);
 
               // Try to find matching option
               let found = false;
               for (let option of lensSelect.options) {
-                if (option.value.toLowerCase() === lensValue ||
-                    option.value.toLowerCase().includes(lensValue) ||
-                    lensValue.includes(option.value.toLowerCase())) {
+                const optionVal = option.value.toLowerCase().trim();
+                if (optionVal === lensValue ||
+                    optionVal.includes(lensValue) ||
+                    lensValue.includes(optionVal)) {
                   lensSelect.value = option.value;
                   found = true;
+                  console.log('Lens matched:', option.value);
                   break;
                 }
               }
 
               // If not found, use custom
               if (!found) {
+                console.log('Lens not found, using custom');
                 lensSelect.value = 'custom';
+                handleLensChange(year);
                 const customInput = document.getElementById(`custom-lens-${year}`);
-                customInput.classList.remove('hidden');
                 customInput.value = result.lens;
               }
             }
@@ -2560,10 +2580,9 @@
           technologyData: appState.technologyData
         };
 
-        const result = await streamGeneration('consequence', payload, 'consequence-analysis-content', async (fullText) => {
+        const result = await streamGeneration('consequence', payload, 'consequence-analysis-content', (fullText) => {
           appState.consequenceAnalysis = fullText;
           syncStateToDatabase();
-          await saveCompletedSession();
         }, (partialText) => {
           appState.consequenceAnalysis = partialText;
         });
@@ -2702,21 +2721,17 @@ Centre for Quantum & Society
     }
 
     async function endSession() {
-      // Update session with final team name and insights
-      if (appState.sessionCode && appState.teamName) {
-        try {
-          await supabaseClient
-            .from('sessions')
-            .update({
-              team_name: appState.teamName,
-              full_state: appState,
-              updated_at: new Date().toISOString()
-            })
-            .eq('group_code', appState.sessionCode);
-        } catch (err) {
-          console.error('Error updating session:', err);
-        }
-      }
+      // Gather team name and insights from form
+      appState.teamName = document.getElementById('team-name-input').value || 'Unnamed Team';
+      appState.insights = {
+        insight1: document.getElementById('insight-1').value,
+        insight2: document.getElementById('insight-2').value,
+        insight3: document.getElementById('insight-3').value
+      };
+
+      // Save completed session to database
+      await saveCompletedSession();
+
       showScreen('screen-end');
     }
 

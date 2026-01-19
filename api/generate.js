@@ -313,7 +313,6 @@ ACTORS (identify one):
 LENSES (identify one):
 - "Housing"
 - "Law & Rights"
-- "Security"
 - "Election"
 - "Public Opinion"
 - "Labor"
