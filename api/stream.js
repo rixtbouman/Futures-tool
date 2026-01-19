@@ -85,7 +85,7 @@ export default async function handler(req) {
 
 // Stream Gemini API response
 async function streamGeminiResponse(apiKey, contents, systemInstruction, writer, encoder) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=${apiKey}`;
 
   const body = { contents };
   if (systemInstruction) {
