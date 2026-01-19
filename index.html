@@ -2633,22 +2633,31 @@
 
     // ===== PHASE 7: WRAP UP =====
     function downloadPDF() {
-      // Gather team name and insights
-      appState.teamName = document.getElementById('team-name-input').value || 'Unnamed Team';
-      appState.insights = {
-        insight1: document.getElementById('insight-1').value,
-        insight2: document.getElementById('insight-2').value,
-        insight3: document.getElementById('insight-3').value
-      };
+      // For moderator: gather from input fields
+      // For viewer: use appState (synced from moderator)
+      if (appState.role === 'moderator') {
+        appState.teamName = document.getElementById('team-name-input').value || 'Unnamed Team';
+        appState.insights = {
+          insight1: document.getElementById('insight-1').value,
+          insight2: document.getElementById('insight-2').value,
+          insight3: document.getElementById('insight-3').value
+        };
 
-      // Validate required fields
-      if (!appState.insights.insight1 || !appState.insights.insight2) {
-        alert(appState.language === 'nl' ? 'Vul minimaal de eerste twee inzichten in' : 'Please fill in at least the first two insights');
-        return;
+        // Validate required fields (only for moderator)
+        if (!appState.insights.insight1 || !appState.insights.insight2) {
+          alert(appState.language === 'nl' ? 'Vul minimaal de eerste twee inzichten in' : 'Please fill in at least the first two insights');
+          return;
+        }
+
+        // Save to database
+        syncStateToDatabase();
+      } else {
+        // Viewer: check if moderator has filled in insights
+        if (!appState.insights?.insight1 || !appState.insights?.insight2) {
+          alert(appState.language === 'nl' ? 'Wacht tot de moderator de inzichten heeft ingevuld' : 'Please wait for the moderator to fill in the insights');
+          return;
+        }
       }
-
-      // Save to database
-      syncStateToDatabase();
 
       const content = `
 FUTURES EXPLORATION TOOL - SESSION REPORT
